@@ -35,4 +35,15 @@ public class GameState {
         secondCard = null;
         boardLocked = false;
     }
+
+    public void restoreState(int score, int movesCount, int remainingPairs,
+                             boolean boardLocked, Card firstCard, Card secondCard) {
+        this.score = score;
+        this.movesCount = movesCount;
+        this.remainingPairs = remainingPairs;
+        this.boardLocked = boardLocked;
+        this.firstCard = firstCard;
+        this.secondCard = secondCard;
+    }
+
 }

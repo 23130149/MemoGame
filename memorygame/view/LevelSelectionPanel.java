@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class LevelSelectionPanel extends JPanel
         implements LevelSelectionController.LevelSelectionListener {
@@ -24,7 +25,7 @@ public class LevelSelectionPanel extends JPanel
     private static final Color TEXT_SECONDARY = new Color(0xB0BEC5);
 
     private final LevelSelectionController controller;
-    private final Runnable onGameStart;   // callback khi bắt đầu trò chơi
+    private final Consumer<GameSession> onGameStart;  // callback khi bắt đầu trò chơi
 
     private final JPanel levelCardsPanel = new JPanel(new GridLayout(1, 3, 20, 0));
     private final JButton confirmBtn  = new JButton("Xác nhận");
@@ -35,7 +36,7 @@ public class LevelSelectionPanel extends JPanel
     private DifficultyLevel selectedLevel = null;
     private GameSession currentSession    = null;
 
-    public LevelSelectionPanel(int playerId, Runnable onGameStart) {
+    public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart) {
         this.onGameStart  = onGameStart;
         this.controller   = new LevelSelectionController(playerId, this);
 
@@ -109,7 +110,7 @@ public class LevelSelectionPanel extends JPanel
     public void onLevelConfirmed(GameSession session) {
         SwingUtilities.invokeLater(() -> {
             clearError();
-            if (onGameStart != null) onGameStart.run();
+            if (onGameStart != null) onGameStart.accept(session);
         });
     }
 
