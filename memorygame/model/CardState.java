@@ -1,4 +1,4 @@
-﻿package memorygame.model;
+package memorygame.model;
 
 public enum CardState {
     FACE_DOWN,

@@ -1,89 +1,71 @@
-﻿package memorygame.controller;
+package memorygame.controller;
 
-import memorygame.model.Card;
-import memorygame.model.CardState;
-import memorygame.model.GameState;
-import memorygame.view.GameBoardPanel;
+import memorygame.model.*;
+import memorygame.view.GameFrame;
 import javax.swing.*;
+import java.io.*;
 
 public class GameController {
-    private static final int MATCH_POINTS = 10;
-    private static final int NO_MATCH_DELAY_MS = 1000;
+    private GameModel model;
+    private GameFrame view;
+    private Timer gameTimer;
 
-    private final GameState gameState;
-    private final GameBoardPanel boardPanel;
+    public GameController(GameModel model, GameFrame view) {
+        this.model = model;
+        this.view = view;
 
-    public GameController(GameState gameState, GameBoardPanel boardPanel) {
-        this.gameState = gameState;
-        this.boardPanel = boardPanel;
-    }
+        // BƯỚC QUAN TRỌNG: Phải gọi hàm khởi tạo Timer ở đây
+        initTimer();
 
-    // UC-04: Xử lý khi người chơi nhấn thẻ
-    public void onCardClick(Card card) {
-        if (gameState.isLocked()) return;
-        if (!isValidSelection(card)) return;
-
-        if (gameState.getFirstCard() == null) {
-            // Lật thẻ thứ nhất
-            card.setState(CardState.FACE_UP);
-            gameState.setFirstCard(card);
-            boardPanel.repaintCard(card);
-        } else {
-            // Lật thẻ thứ hai
-            card.setState(CardState.FACE_UP);
-            gameState.setSecondCard(card);
-            gameState.lockBoard(true);
-            boardPanel.repaintCard(card);
-
-            // Kích hoạt UC-05
-            checkMatch();
-        }
-    }
-
-    // UC-05: Kiểm tra cặp thẻ trùng
-    private void checkMatch() {
-        Card first = gameState.getFirstCard();
-        Card second = gameState.getSecondCard();
-
-        if (first.getValue().equals(second.getValue())) {
-            handleMatch(first, second);
-        } else {
-            handleNoMatch(first, second);
-        }
-    }
-
-    private void handleMatch(Card first, Card second) {
-        first.setState(CardState.MATCHED);
-        second.setState(CardState.MATCHED);
-        gameState.updateScore(MATCH_POINTS);
-        gameState.decrementRemainingPairs();
-        gameState.incrementMoves();
-        boardPanel.showMatchEffect(first, second);
-        boardPanel.updateScoreDisplay(gameState.getScore());
-        gameState.resetTurnState();
-
-        if (gameState.getRemainingPairs() == 0) {
-            boardPanel.showGameOver(gameState.getScore(), gameState.getMovesCount());
-        }
-    }
-
-    private void handleNoMatch(Card first, Card second) {
-        boardPanel.showNoMatchEffect(first, second);
-        Timer timer = new Timer(NO_MATCH_DELAY_MS, e -> {
-            first.setState(CardState.FACE_DOWN);
-            second.setState(CardState.FACE_DOWN);
-            boardPanel.repaintCard(first);
-            boardPanel.repaintCard(second);
-            gameState.incrementMoves();
-            gameState.resetTurnState();
+        // UC6: Đăng ký sự kiện Test cộng điểm
+        this.view.addTestMatchListener(e -> {
+            model.updateScore(10);
+            this.view.updateUI(model.getScore(), model.getTimer());
         });
-        timer.setRepeats(false);
-        timer.start();
+
+        // UC9: Đăng ký sự kiện Lưu game
+        this.view.addSaveListener(e -> saveGame());
     }
 
-    private boolean isValidSelection(Card card) {
-        if (card.isMatched()) return false;
-        if (card.getState() == CardState.FACE_UP) return false;
-        return true;
+    // Tách hàm initTimer ra ngoài Constructor
+    private void initTimer() {
+        // Bước 1 trong Sequence: Timer gửi tín hiệu tick mỗi 1000ms
+        gameTimer = new Timer(1000, e -> {
+
+            // Bước 2: Yêu cầu Model giảm giá trị (timer - 1)
+            int newTime = model.getTimer() - 1;
+            model.setTimer(newTime);
+
+            // Bước 3 & 4: Cập nhật UI dựa trên dữ liệu mới nhất từ Model
+            view.updateUI(model.getScore(), model.getTimer());
+
+            // Bước 5 - 9: Kiểm tra kết thúc
+            if (model.getTimer() <= 10 && model.getTimer() > 0) {
+                System.out.println("Cảnh báo: Sắp hết giờ!");
+            } else if (model.getTimer() <= 0) {
+                gameTimer.stop();
+                JOptionPane.showMessageDialog(view, "Hết giờ!");
+            }
+        });
+    }
+
+    public void startGame() {
+        if (gameTimer != null) {
+            gameTimer.start();
+        }
+    }
+
+    private void saveGame() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("savegame.dat"))) {
+            gameTimer.stop(); // Tạm dừng Timer theo đúng Sequence UC9
+            oos.writeObject(model.getScore());
+            oos.writeObject(model.getTimer());
+            oos.writeObject(model.getCards());
+            JOptionPane.showMessageDialog(view, "UC9: Đã lưu tiến trình!");
+            gameTimer.start(); // Chạy lại sau khi lưu xong
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(view, "Lỗi khi lưu game!");
+        }
     }
 }
