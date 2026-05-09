@@ -1,4 +1,4 @@
-﻿package memorygame.model;
+package memorygame.model;
 
 public class GameState {
     private Card firstCard;
