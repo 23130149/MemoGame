@@ -2,6 +2,7 @@ package memorygame.controller;
 
 import memorygame.model.GameEngine;
 import memorygame.persistence.SaveGameService;
+import memorygame.view.GameBoardPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,8 +19,8 @@ public final class GameFlowController {
         if (!SaveGameService.hasSave(saveFile)) {
             JOptionPane.showMessageDialog(
                     parentFrame,
-                    "Khong co du lieu",
-                    "Thong bao",
+                    "Không có dữ liệu",
+                    "Thông báo",
                     JOptionPane.INFORMATION_MESSAGE
             );
             return;
@@ -34,47 +35,90 @@ public final class GameFlowController {
         } catch (IOException | ClassNotFoundException ex) {
             JOptionPane.showMessageDialog(
                     parentFrame,
-                    "Tai tien trinh that bai: " + ex.getMessage(),
-                    "Loi",
+                    "Tải tiến trình thất bại: " + ex.getMessage(),
+                    "Lỗi",
                     JOptionPane.ERROR_MESSAGE
             );
         }
     }
 
     public static void openGameWindow(GameEngine engine, Path saveFile) {
-        JFrame gameFrame = new JFrame("Memory Game");
+        JFrame gameFrame = new JFrame("Memory Game - " + engine.getSession().getLevel().getLevelName());
         gameFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        gameFrame.setSize(700, 500);
+        gameFrame.setSize(900, 700);
         gameFrame.setLocationRelativeTo(null);
 
-        JPanel root = new JPanel(new BorderLayout());
-        JLabel info = new JLabel(
-                "Cards: " + engine.getCards().size()
-                        + " | Score: " + engine.getGameState().getScore()
-                        + " | Moves: " + engine.getGameState().getMovesCount(),
-                SwingConstants.CENTER
-        );
+        // Top panel: Thông tin
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(new Color(0x1A1A2E));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        JButton saveExitBtn = new JButton("Luu va thoat");
+        JLabel infoLabel = new JLabel();
+        infoLabel.setForeground(Color.WHITE);
+        infoLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        updateInfoLabel(infoLabel, engine);
+        topPanel.add(infoLabel, BorderLayout.WEST);
+
+        // Board panel
+        int rows = engine.getSession().getLevel().getGridRows();
+        int cols = engine.getSession().getLevel().getGridCols();
+        GameBoardPanel boardPanel = new GameBoardPanel(rows, cols);
+
+        // Game controller
+        GameController gameController = new GameController(engine, boardPanel);
+
+        // Bottom panel: Buttons
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        bottomPanel.setBackground(new Color(0x1A1A2E));
+
+        JButton saveExitBtn = new JButton("Lưu và thoát");
+        saveExitBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        saveExitBtn.setPreferredSize(new Dimension(130, 40));
         saveExitBtn.addActionListener(e -> {
             try {
                 engine.saveProgress(saveFile);
-                JOptionPane.showMessageDialog(gameFrame, "Da luu tien trinh.");
+                JOptionPane.showMessageDialog(gameFrame, "Đã lưu tiến trình.");
                 gameFrame.dispose();
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(
                         gameFrame,
-                        "Luu that bai: " + ex.getMessage(),
-                        "Loi",
+                        "Lưu thất bại: " + ex.getMessage(),
+                        "Lỗi",
                         JOptionPane.ERROR_MESSAGE
                 );
             }
         });
 
-        root.add(info, BorderLayout.CENTER);
-        root.add(saveExitBtn, BorderLayout.SOUTH);
+        JButton resetBtn = new JButton("Chơi lại");
+        resetBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        resetBtn.setPreferredSize(new Dimension(130, 40));
+        resetBtn.addActionListener(e -> {
+            // Reset game
+            engine.initBoard(engine.getSession());
+            boardPanel.initializeBoard(engine.getCards());
+            updateInfoLabel(infoLabel, engine);
+        });
+
+        bottomPanel.add(resetBtn);
+        bottomPanel.add(saveExitBtn);
+
+        // Root panel
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(new Color(0x1A1A2E));
+        root.add(topPanel, BorderLayout.NORTH);
+        root.add(boardPanel, BorderLayout.CENTER);
+        root.add(bottomPanel, BorderLayout.SOUTH);
 
         gameFrame.setContentPane(root);
         gameFrame.setVisible(true);
+    }
+
+    private static void updateInfoLabel(JLabel label, GameEngine engine) {
+        label.setText(String.format(
+                "Điểm: %d | Lượt: %d | Cặp còn lại: %d",
+                engine.getGameState().getScore(),
+                engine.getGameState().getMovesCount(),
+                engine.getGameState().getRemainingPairs()
+        ));
     }
 }
