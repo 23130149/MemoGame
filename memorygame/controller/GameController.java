@@ -1,71 +1,133 @@
 package memorygame.controller;
 
 import memorygame.model.*;
-import memorygame.view.GameFrame;
+import memorygame.service.PersistenceManager;
+import memorygame.view.GameBoardPanel;
 import javax.swing.*;
-import java.io.*;
 
 public class GameController {
-    private GameModel model;
-    private GameFrame view;
+    private final GameModel model; // Dùng GameModel làm dữ liệu chính
+    private final GameBoardPanel view;
     private Timer gameTimer;
+    private boolean boardLocked = false;
 
-    public GameController(GameModel model, GameFrame view) {
+    // Constructor: Kết nối Model và View
+    public GameController(GameModel model, GameBoardPanel view) {
         this.model = model;
         this.view = view;
-
-        // BƯỚC QUAN TRỌNG: Phải gọi hàm khởi tạo Timer ở đây
-        initTimer();
-
-        // UC6: Đăng ký sự kiện Test cộng điểm
-        this.view.addTestMatchListener(e -> {
-            model.updateScore(10);
-            this.view.updateUI(model.getScore(), model.getTimer());
-        });
-
-        // UC9: Đăng ký sự kiện Lưu game
-        this.view.addSaveListener(e -> saveGame());
+        initTimer(); // Khởi tạo bộ đếm thời gian
     }
 
-    // Tách hàm initTimer ra ngoài Constructor
+    // ==========================================================
+    // UC-06: TÍNH ĐIỂM & ĐẾM THỜI GIAN
+    // ==========================================================
     private void initTimer() {
-        // Bước 1 trong Sequence: Timer gửi tín hiệu tick mỗi 1000ms
         gameTimer = new Timer(1000, e -> {
-
-            // Bước 2: Yêu cầu Model giảm giá trị (timer - 1)
-            int newTime = model.getTimer() - 1;
-            model.setTimer(newTime);
-
-            // Bước 3 & 4: Cập nhật UI dựa trên dữ liệu mới nhất từ Model
-            view.updateUI(model.getScore(), model.getTimer());
-
-            // Bước 5 - 9: Kiểm tra kết thúc
-            if (model.getTimer() <= 10 && model.getTimer() > 0) {
-                System.out.println("Cảnh báo: Sắp hết giờ!");
-            } else if (model.getTimer() <= 0) {
-                gameTimer.stop();
-                JOptionPane.showMessageDialog(view, "Hết giờ!");
+            int currentTime = model.getTimer();
+            if (currentTime > 0) {
+                model.setTimer(currentTime - 1); // Logic UC6: Trừ 1 giây mỗi lần tick
+                view.updateTimerDisplay(model.getTimer());
+            } else {
+                stopGame("Hết thời gian!");
             }
         });
     }
 
-    public void startGame() {
-        if (gameTimer != null) {
-            gameTimer.start();
+    public void startGame() { gameTimer.start(); }
+
+    // ==========================================================
+    // UC-09: LƯU TIẾN TRÌNH (Sửa lỗi trùng hàm và sai biến ở đây)
+    // ==========================================================
+    public void saveGame() {
+        gameTimer.stop(); // Tạm dừng Timer để dữ liệu đứng yên khi lưu
+
+        // Đóng gói dữ liệu hiện tại vào đối tượng SaveData
+        GameSaveData data = new GameSaveData(
+                model.getScore(),
+                model.getTimer(),
+                model.getCards()
+        );
+
+        // Gọi PersistenceManager (hàm static) để ghi file
+        boolean success = PersistenceManager.saveGame("savegame.dat", data);
+
+        if (success) {
+            JOptionPane.showMessageDialog(view, "Đã lưu ván chơi thành công!");
+        } else {
+            JOptionPane.showMessageDialog(view, "Lỗi: Không thể lưu file!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+
+        gameTimer.start(); // Chạy tiếp Timer sau khi lưu xong
+    }
+
+    // ==========================================================
+    // UC-12: TẢI TIẾN TRÌNH (Load Game)
+    // ==========================================================
+    public void loadGame() {
+        GameSaveData data = PersistenceManager.loadGame("savegame.dat");
+        if (data != null) {
+            // Nạp lại dữ liệu cũ vào Model hiện tại
+            model.setScore(data.score);
+            model.setTimer(data.timer);
+            model.setCards(data.cards);
+
+            // Cập nhật lại toàn bộ giao diện (View)
+            view.setupBoard(model.getCards(), 4, 4, this);
+            view.updateScoreDisplay(model.getScore());
+            view.updateTimerDisplay(model.getTimer());
+
+            JOptionPane.showMessageDialog(view, "Đã khôi phục ván chơi cũ!");
         }
     }
 
-    private void saveGame() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("savegame.dat"))) {
-            gameTimer.stop(); // Tạm dừng Timer theo đúng Sequence UC9
-            oos.writeObject(model.getScore());
-            oos.writeObject(model.getTimer());
-            oos.writeObject(model.getCards());
-            JOptionPane.showMessageDialog(view, "UC9: Đã lưu tiến trình!");
-            gameTimer.start(); // Chạy lại sau khi lưu xong
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(view, "Lỗi khi lưu game!");
+    // UC-04: Xử lý khi nhấn lật thẻ
+    public void onCardClick(Card card) {
+        if (boardLocked || card.isMatched() || card == model.getFirstSelected()) return;
+
+        if (model.getFirstSelected() == null) {
+            card.setState(CardState.FACE_UP);
+            model.setFirstSelected(card);
+            view.repaintCard(card);
+        } else {
+            card.setState(CardState.FACE_UP);
+            model.setSecondSelected(card);
+            view.repaintCard(card);
+            boardLocked = true; // Khóa bàn chơi để kiểm tra cặp thẻ (UC-05)
+            checkMatch();
         }
+    }
+
+    // UC-05: Kiểm tra cặp thẻ trùng
+    private void checkMatch() {
+        Card c1 = model.getFirstSelected();
+        Card c2 = model.getSecondSelected();
+
+        if (c1.getValue().equals(c2.getValue())) {
+            c1.setState(CardState.MATCHED);
+            c2.setState(CardState.MATCHED);
+            model.updateScore(10); // Logic UC6: Cộng 10 điểm
+            model.incrementMoves();
+            view.updateScoreDisplay(model.getScore());
+            model.resetTurn();
+            boardLocked = false;
+            // Kiểm tra thắng game ở đây...
+        } else {
+            Timer delay = new Timer(1000, e -> {
+                c1.setState(CardState.FACE_DOWN);
+                c2.setState(CardState.FACE_DOWN);
+                view.repaintCard(c1);
+                view.repaintCard(c2);
+                model.incrementMoves();
+                model.resetTurn();
+                boardLocked = false;
+            });
+            delay.setRepeats(false);
+            delay.start();
+        }
+    }
+
+    private void stopGame(String msg) {
+        gameTimer.stop();
+        view.showGameOver(model.getScore(), model.getMovesCount());
     }
 }
