@@ -45,7 +45,7 @@ public class MyMain {
             GameFlowController.openGameWindow(engine, SAVE_FILE);
         });
 
-        JButton continueBtn = new JButton("Tiep tuc");
+        JButton continueBtn = new JButton("Tiếp tục");
         continueBtn.setFont(new Font("SansSerif", Font.BOLD, 14));
         continueBtn.setPreferredSize(new Dimension(140, 40));
         continueBtn.addActionListener(e ->
