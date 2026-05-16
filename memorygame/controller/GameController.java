@@ -1,4 +1,4 @@
-﻿package memorygame.controller;
+package memorygame.controller;
 
 import memorygame.model.Card;
 import memorygame.model.CardState;
