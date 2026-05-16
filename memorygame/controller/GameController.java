@@ -35,51 +35,6 @@ public class GameController {
 
     public void startGame() { gameTimer.start(); }
 
-    // ==========================================================
-    // UC-09: LƯU TIẾN TRÌNH (Sửa lỗi trùng hàm và sai biến ở đây)
-    // ==========================================================
-    public void saveGame() {
-        gameTimer.stop(); // Tạm dừng Timer để dữ liệu đứng yên khi lưu
-
-        // Đóng gói dữ liệu hiện tại vào đối tượng SaveData
-        GameSaveData data = new GameSaveData(
-                model.getScore(),
-                model.getTimer(),
-                model.getCards()
-        );
-
-        // Gọi PersistenceManager (hàm static) để ghi file
-        boolean success = PersistenceManager.saveGame("savegame.dat", data);
-
-        if (success) {
-            JOptionPane.showMessageDialog(view, "Đã lưu ván chơi thành công!");
-        } else {
-            JOptionPane.showMessageDialog(view, "Lỗi: Không thể lưu file!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-
-        gameTimer.start(); // Chạy tiếp Timer sau khi lưu xong
-    }
-
-    // ==========================================================
-    // UC-12: TẢI TIẾN TRÌNH (Load Game)
-    // ==========================================================
-    public void loadGame() {
-        GameSaveData data = PersistenceManager.loadGame("savegame.dat");
-        if (data != null) {
-            // Nạp lại dữ liệu cũ vào Model hiện tại
-            model.setScore(data.score);
-            model.setTimer(data.timer);
-            model.setCards(data.cards);
-
-            // Cập nhật lại toàn bộ giao diện (View)
-            view.setupBoard(model.getCards(), 4, 4, this);
-            view.updateScoreDisplay(model.getScore());
-            view.updateTimerDisplay(model.getTimer());
-
-            JOptionPane.showMessageDialog(view, "Đã khôi phục ván chơi cũ!");
-        }
-    }
-
     // UC-04: Xử lý khi nhấn lật thẻ
     public void onCardClick(Card card) {
         if (boardLocked || card.isMatched() || card == model.getFirstSelected()) return;

@@ -51,11 +51,6 @@ public class GameBoardPanel extends JPanel {
         add(controlPanel, BorderLayout.SOUTH);
     }
 
-    // Hàm để Controller gắn sự kiện vào nút (Gửi từ Main)
-    public void setControlListeners(GameController controller) {
-        btnSave.addActionListener(e -> controller.saveGame()); // Kích hoạt UC-09
-        btnLoad.addActionListener(e -> controller.loadGame()); // Kích hoạt UC-12
-    }
 
     public void setupBoard(List<Card> cards, int rows, int cols, GameController controller) {
         gridPanel.removeAll();
