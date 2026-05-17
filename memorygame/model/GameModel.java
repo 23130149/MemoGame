@@ -3,58 +3,122 @@ package memorygame.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Quản lý toàn bộ dữ liệu và trạng thái của ván chơi
- */
 public class GameModel {
+
     private List<Card> cards;
     private int score;
-    private int timer; // Đếm ngược thời gian (giây)
-    private int movesCount; // Đếm số lượt lật thẻ
-    private int remainingPairs; // Số cặp thẻ còn lại chưa tìm thấy
+    private int timer;
+    private int movesCount;
+    private int remainingPairs;
+    private double scoreMultiplier;
+    private LevelConfig level;
     private Card firstSelectedCard;
     private Card secondSelectedCard;
 
     public GameModel() {
         this.cards = new ArrayList<>();
         this.score = 0;
-        this.timer = 60; // Thiết lập mặc định 60 giây cho mỗi ván (UC-06).
+        this.timer = 60;
+        this.movesCount = 0;
+        this.scoreMultiplier = 1.0;
+        this.level = LevelConfig.DE; // Mặc định cấp Dễ
+    }
+
+    // UC-06: Thiết lập cấp độ, cập nhật timer và hệ số điểm
+    public void setLevel(LevelConfig level) {
+        this.level = level;
+        this.timer = level.getTimeSeconds();
+        this.scoreMultiplier = level.getScoreMultiplier();
+    }
+
+    // UC-06: Cập nhật điểm theo hệ số cấp độ, không âm
+    public void updateScore(int basePoints) {
+        int pts = (int) (basePoints * scoreMultiplier);
+        this.score = Math.max(0, this.score + pts);
+    }
+
+    // UC-06: Reset điểm về 0
+    public void resetScore() {
+        this.score = 0;
         this.movesCount = 0;
     }
 
-    // Logic UC-06: Cập nhật điểm số và đảm bảo điểm không bao giờ âm.
-    public void updateScore(int points) {
-        this.score = Math.max(0, this.score + points);
+    // UC-06: Reset timer theo cấp độ hiện tại
+    public void resetTimer() {
+        this.timer = (level != null) ? level.getTimeSeconds() : 60;
     }
 
-    // Logic UC-06: Tăng số lượt đi sau mỗi lần hoàn thành 1 lượt nhấn (UC-04).
-    public void incrementMoves() { this.movesCount++; }
+    // UC-04: Tăng số lượt đi
+    public void incrementMoves() {
+        this.movesCount++;
+    }
 
     // Getters & Setters
-    public int getScore() { return score; }
-    public void setScore(int score) { this.score = score; }
-
-    public int getTimer() { return timer; }
-    public void setTimer(int timer) { this.timer = timer; } // Dùng để giảm thời gian mỗi giây (UC-06).
-
-    public List<Card> getCards() { return cards; }
-    public void setCards(List<Card> cards) {
-        this.cards = cards;
-        this.remainingPairs = cards.size() / 2; // Tự động tính số cặp dựa trên tổng số thẻ
+    public int getScore() {
+        return score;
     }
 
-    public int getRemainingPairs() { return remainingPairs; }
-    public void decrementRemainingPairs() { this.remainingPairs--; }
+    public void setScore(int score) {
+        this.score = score;
+    }
 
-    public int getMovesCount() { return movesCount; }
-    public void setMovesCount(int moves) { this.movesCount = moves; }
+    public int getTimer() {
+        return timer;
+    }
 
-    public Card getFirstSelected() { return firstSelectedCard; }
-    public void setFirstSelected(Card card) { this.firstSelectedCard = card; }
-    public Card getSecondSelected() { return secondSelectedCard; }
-    public void setSecondSelected(Card card) { this.secondSelectedCard = card; }
+    public void setTimer(int timer) {
+        this.timer = timer;
+    }
 
-    // Reset trạng thái sau mỗi lượt lật 2 thẻ (Dù đúng hay sai)
+    public double getScoreMultiplier() {
+        return scoreMultiplier;
+    }
+
+    public LevelConfig getLevel() {
+        return level;
+    }
+
+    public List<Card> getCards() {
+        return cards;
+    }
+
+    public void setCards(List<Card> cards) {
+        this.cards = cards;
+        this.remainingPairs = cards.size() / 2;
+    }
+
+    public int getRemainingPairs() {
+        return remainingPairs;
+    }
+
+    public void decrementRemainingPairs() {
+        this.remainingPairs--;
+    }
+
+    public int getMovesCount() {
+        return movesCount;
+    }
+
+    public void setMovesCount(int moves) {
+        this.movesCount = moves;
+    }
+
+    public Card getFirstSelected() {
+        return firstSelectedCard;
+    }
+
+    public void setFirstSelected(Card c) {
+        this.firstSelectedCard = c;
+    }
+
+    public Card getSecondSelected() {
+        return secondSelectedCard;
+    }
+
+    public void setSecondSelected(Card c) {
+        this.secondSelectedCard = c;
+    }
+
     public void resetTurn() {
         this.firstSelectedCard = null;
         this.secondSelectedCard = null;

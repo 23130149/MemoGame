@@ -1,53 +1,99 @@
 package memorygame.Main;
 
 import memorygame.controller.GameController;
-import memorygame.model.*;
+import memorygame.model.Card;
+import memorygame.model.CardState;
+import memorygame.model.GameModel;
+import memorygame.model.LevelConfig;
 import memorygame.view.GameBoardPanel;
-import javax.swing.*;
-import java.util.*;
 
-/**
- * Điểm khởi chạy ứng dụng, thiết lập mô hình MVC.
- */
+import javax.swing.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class Main {
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // 1. Tạo Model
+
+            // 1. Chọn cấp độ
+            LevelConfig level = chooseLevel();
+            if (level == null) return; // Người dùng bấm Cancel
+
+            // 2. Khởi tạo Model
             GameModel model = new GameModel();
+            model.setLevel(level);
 
-            // 2. Tạo dữ liệu thẻ bài ngẫu nhiên
-            List<Card> cardList = new ArrayList<>();
-            String[] vals = {"A", "B", "C", "D", "E", "F", "G", "H"};
-            for (int i = 0; i < vals.length; i++) {
-                cardList.add(new Card(i * 2, vals[i]));
-                cardList.add(new Card(i * 2 + 1, vals[i]));
-            }
-            Collections.shuffle(cardList); // Trộn bài
-            model.setCards(cardList);
+            // 3. Tạo danh sách thẻ theo số cặp của cấp độ
+            List<Card> cards = createCards(level.getTotalPairs());
+            model.setCards(cards);
 
-            // 3. Tạo View
-            GameBoardPanel view = new GameBoardPanel();
+            // 4. Khởi tạo View
+            GameBoardPanel view = new GameBoardPanel(model);
 
-            // 4. Tạo Controller kết nối Model và View
+            // 5. Khởi tạo Controller
             GameController controller = new GameController(model, view);
+            view.setController(controller);
 
-            // --- 5. KÍCH HOẠT XỬ LÝ SỰ KIỆN (DÒNG CỰC KỲ QUAN TRỌNG) ---
-            // Nếu thiếu dòng này, nút Lưu/Tải sẽ không hoạt động
-            view.setControlListeners(controller);
-
-            // 6. Cấu hình bàn chơi lưới 4x4
-            view.setupBoard(model.getCards(), 4, 4, controller);
-
-            // 7. Hiển thị cửa sổ
-            JFrame frame = new JFrame("Memory Game - IT NLU");
+            // 6. Tạo JFrame
+            JFrame frame = new JFrame("Memory Card – " + level.getDisplayName());
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.add(view);
-            frame.pack();
+            frame.setContentPane(view);
+            frame.setSize(700, 600);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
 
-            // 8. Bắt đầu game (Timer nhảy số - UC-06)
-            controller.startGame();
+            // 7. Bắt đầu game
+            controller.startGame(level);
         });
+    }
+
+    // Hộp thoại chọn cấp độ
+    private static LevelConfig chooseLevel() {
+        String[] options = {
+                "Dễ (4×4, 120s, ×1.0)",
+                "Trung bình (6×6, 90s, ×1.5)",
+                "Khó (8×8, 60s, ×2.0)"
+        };
+        int choice = JOptionPane.showOptionDialog(
+                null,
+                "Chọn cấp độ:",
+                "Memory Card – Chọn Cấp Độ",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        return switch (choice) {
+            case 0 -> LevelConfig.DE;
+            case 1 -> LevelConfig.TRUNG_BINH;
+            case 2 -> LevelConfig.KHO;
+            default -> null;
+        };
+    }
+
+    // Tạo danh sách thẻ và xáo trộn
+    private static List<Card> createCards(int totalPairs) {
+        String[] allValues = {
+                "🍎","🍌","🍇","🍓","🍒","🍑",
+                "🥝","🍉","🍋","🍊","🍍","🥭",
+                "🍆","🥑","🌽","🥕","🍄","🧅",
+                "🐶","🐱","🐭","🐹","🐰","🦊",
+                "🐻","🐼","🐨","🐯","🦁","🐸",
+                "🌸","🌺","🌻","🌹","🌷","🍀"
+        };
+
+        List<Card> cards = new ArrayList<>();
+        int id = 0;
+        for (int i = 0; i < totalPairs; i++) {
+            String value = allValues[i % allValues.length];
+            cards.add(new Card(id++, value));
+            cards.add(new Card(id++, value));
+        }
+
+        Collections.shuffle(cards);
+        return cards;
     }
 }

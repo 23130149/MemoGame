@@ -1,53 +1,76 @@
 package memorygame.controller;
 
-import memorygame.model.*;
-import memorygame.service.PersistenceManager;
+import memorygame.model.Card;
+import memorygame.model.CardState;
+import memorygame.model.GameModel;
+import memorygame.model.LevelConfig;
 import memorygame.view.GameBoardPanel;
-import javax.swing.*;
+
+import javax.swing.JOptionPane;
+import javax.swing.Timer;
 
 public class GameController {
-    private final GameModel model; // Dùng GameModel làm dữ liệu chính
+
+    private final GameModel model;
     private final GameBoardPanel view;
     private Timer gameTimer;
     private boolean boardLocked = false;
 
-    // Constructor: Kết nối Model và View
     public GameController(GameModel model, GameBoardPanel view) {
         this.model = model;
-        this.view = view;
-        initTimer(); // Khởi tạo bộ đếm thời gian
+        this.view  = view;
     }
 
-    // ==========================================================
-    // UC-06: TÍNH ĐIỂM & ĐẾM THỜI GIAN
-    // ==========================================================
+    // UC-06: Khởi động game theo cấp độ
+    public void startGame(LevelConfig level) {
+        model.setLevel(level);
+        model.resetScore();
+        model.resetTimer();
+        boardLocked = false;
+
+        // Setup bàn chơi theo số hàng/cột của cấp độ
+        view.setupBoard(level.getRows(), level.getCols());
+        view.updateTimerDisplay(model.getTimer());
+        view.updateScoreDisplay(model.getScore());
+
+        initTimer();
+        gameTimer.start();
+    }
+
+    // UC-06: Khởi tạo bộ đếm thời gian
     private void initTimer() {
+        if (gameTimer != null && gameTimer.isRunning()) {
+            gameTimer.stop();
+        }
         gameTimer = new Timer(1000, e -> {
             int currentTime = model.getTimer();
             if (currentTime > 0) {
-                model.setTimer(currentTime - 1); // Logic UC6: Trừ 1 giây mỗi lần tick
+                model.setTimer(currentTime - 1);
                 view.updateTimerDisplay(model.getTimer());
+
+                // A3: Cảnh báo khi còn <= 10 giây
+                if (model.getTimer() <= 10) {
+                    view.showTimerWarning();
+                }
             } else {
+                // A4: Hết thời gian
                 stopGame("Hết thời gian!");
             }
         });
     }
 
-    public void startGame() { gameTimer.start(); }
-
     // UC-04: Xử lý khi nhấn lật thẻ
     public void onCardClick(Card card) {
         if (boardLocked || card.isMatched() || card == model.getFirstSelected()) return;
 
+        card.setState(CardState.FACE_UP);
+        view.repaintCard(card);
+
         if (model.getFirstSelected() == null) {
-            card.setState(CardState.FACE_UP);
             model.setFirstSelected(card);
-            view.repaintCard(card);
         } else {
-            card.setState(CardState.FACE_UP);
             model.setSecondSelected(card);
-            view.repaintCard(card);
-            boardLocked = true; // Khóa bàn chơi để kiểm tra cặp thẻ (UC-05)
+            boardLocked = true;
             checkMatch();
         }
     }
@@ -56,23 +79,28 @@ public class GameController {
     private void checkMatch() {
         Card c1 = model.getFirstSelected();
         Card c2 = model.getSecondSelected();
+        model.incrementMoves();
 
         if (c1.getValue().equals(c2.getValue())) {
+            // A1: Ghép đúng -> cộng điểm × multiplier
             c1.setState(CardState.MATCHED);
             c2.setState(CardState.MATCHED);
-            model.updateScore(10); // Logic UC6: Cộng 10 điểm
-            model.incrementMoves();
+            model.updateScore(10);
+            model.decrementRemainingPairs();
+            view.showMatchEffect(c1, c2);
             view.updateScoreDisplay(model.getScore());
             model.resetTurn();
             boardLocked = false;
-            // Kiểm tra thắng game ở đây...
+            checkEndCondition();
         } else {
+            // A2: Ghép sai -> trừ điểm × multiplier, úp lại sau 1 giây
+            model.updateScore(-2);
+            view.updateScoreDisplay(model.getScore());
             Timer delay = new Timer(1000, e -> {
                 c1.setState(CardState.FACE_DOWN);
                 c2.setState(CardState.FACE_DOWN);
                 view.repaintCard(c1);
                 view.repaintCard(c2);
-                model.incrementMoves();
                 model.resetTurn();
                 boardLocked = false;
             });
@@ -81,8 +109,30 @@ public class GameController {
         }
     }
 
-    private void stopGame(String msg) {
+    // UC-06: Kiểm tra điều kiện kết thúc
+    private void checkEndCondition() {
+        if (model.getRemainingPairs() == 0) {
+            // A5: Hoàn thành sớm -> thưởng điểm thời gian còn lại × multiplier
+            int bonusBase = model.getTimer() * 2;
+            model.updateScore(bonusBase);
+            view.updateScoreDisplay(model.getScore());
+            stopGame("Chúc mừng! Bạn đã hoàn thành!");
+        }
+    }
+
+    // UC-06: Dừng game
+    private void stopGame(String message) {
         gameTimer.stop();
+        boardLocked = true;
+        view.lockBoard();
         view.showGameOver(model.getScore(), model.getMovesCount());
+    }
+
+    // Điều hướng về Menu
+    public void backToMenu() {
+        if (gameTimer != null && gameTimer.isRunning()) {
+            gameTimer.stop();
+        }
+        JOptionPane.showMessageDialog(view, "Quay về Menu!");
     }
 }
