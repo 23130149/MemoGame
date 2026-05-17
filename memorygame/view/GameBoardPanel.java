@@ -17,6 +17,8 @@ public class GameBoardPanel extends JPanel {
     private static final Color CARD_MATCHED = new Color(0x4CAF50);
     private static final Color CARD_FACE_UP = new Color(0x2196F3);
     private static final Color BORDER_COLOR = new Color(0x16213E);
+    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);  // Vàng bán trong
+    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);    // Vàng đậm
 
     private List<Card> cards;
     private int gridRows;
@@ -69,7 +71,6 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void showMatchEffect(Card first, Card second) {
-        // TODO: Animation khi match (fade out, scale, v.v.)
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == first || btn.getCard() == second) {
                 btn.showMatchEffect();
@@ -78,10 +79,25 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void showNoMatchEffect(Card first, Card second) {
-        // TODO: Animation khi no-match (shake, flip effect, v.v.)
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == first || btn.getCard() == second) {
                 btn.showNoMatchEffect();
+            }
+        }
+    }
+
+    public void showHintEffect(Card cardX, Card cardY) {
+        for (CardButton btn : cardButtons) {
+            if (btn.getCard() == cardX || btn.getCard() == cardY) {
+                btn.showHintHighlight();
+            }
+        }
+    }
+
+    public void hideHintEffect(Card cardX, Card cardY) {
+        for (CardButton btn : cardButtons) {
+            if (btn.getCard() == cardX || btn.getCard() == cardY) {
+                btn.hideHintHighlight();
             }
         }
     }
@@ -94,10 +110,14 @@ public class GameBoardPanel extends JPanel {
         this.onCardClicked = callback;
     }
 
-    public void updateScoreDisplay(int score) {
-        // TODO: Cập nhật label điểm trên UI
-        // Thường xuyên update score bên ngoài panel
-        repaint();
+    public void updateHintDisplay(int remainingHints) {
+        // Cập nhật từ controller
+        System.out.println("Remaining hints: " + remainingHints);
+    }
+
+    public void showNotify(String message) {
+        JOptionPane.showMessageDialog(this, message, "Thông báo",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void showGameOver(int score, int moves) {
@@ -107,34 +127,10 @@ public class GameBoardPanel extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ===== HINT UI METHODS =====
-
-    public void showHintEffect(Card cardX, Card cardY) {
-        // TODO: Animation hiệu ứng gợi ý (highlight, glow, border, v.v.)
-        // Ví dụ: highlight 2 thẻ bằng màu vàng
-        System.out.println("Hint: Showing " + cardX.getValue() + " and " + cardY.getValue());
-    }
-
-    public void hideHintEffect(Card cardX, Card cardY) {
-        // TODO: Tắt hiệu ứng gợi ý
-        System.out.println("Hint: Hiding effects");
-    }
-
-    public void updateHintDisplay(int remainingHints) {
-        // TODO: Cập nhật label số hint còn lại trên UI
-        // Ví dụ: lblHints.setText("Gợi ý: " + remainingHints);
-        System.out.println("Remaining hints: " + remainingHints);
-    }
-
-    public void showNotify(String message) {
-        // TODO: Hiển thị thông báo cho người chơi (Toast, Dialog, Label, v.v.)
-        JOptionPane.showMessageDialog(this, message, "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    // Inner class: Card button
+    // ===== INNER CLASS: CardButton =====
     private class CardButton extends JButton {
         private final Card card;
+        private boolean hintHighlighted = false;
         private static final int MATCH_FLASH_DURATION = 500;
 
         CardButton(Card card) {
@@ -173,25 +169,48 @@ public class GameBoardPanel extends JPanel {
         }
 
         void showMatchEffect() {
-            // Flash xanh lá để chỉ thẻ được match thành công
             new Timer(MATCH_FLASH_DURATION, e -> {
                 updateAppearance();
-                ((Timer)e.getSource()).stop();
+                ((Timer) e.getSource()).stop();
             }).start();
         }
 
         void showNoMatchEffect() {
-            // Flash đỏ để chỉ thẻ không match
             new Timer(MATCH_FLASH_DURATION, e -> {
                 updateAppearance();
-                ((Timer)e.getSource()).stop();
+                ((Timer) e.getSource()).stop();
             }).start();
+        }
+
+        void showHintHighlight() {
+            hintHighlighted = true;
+            repaint();
+        }
+
+        void hideHintHighlight() {
+            hintHighlighted = false;
+            repaint();
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             updateAppearance();
+
+            // Vẽ hiệu ứng highlight khi gợi ý
+            if (hintHighlighted) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Vùng phủ vàng bán trong
+                g2.setColor(HINT_HIGHLIGHT);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+
+                // Viền vàng đậm
+                g2.setColor(HINT_BORDER);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
+            }
         }
     }
 }

@@ -19,33 +19,57 @@ public class GameEngine {
         if (session == null || session.getStatus() != GameSession.Status.CONFIRMED) {
             return false;
         }
-        this.session = session;
+
         DifficultyLevel level = session.getLevel();
-        this.gameState = new GameState(level.getTotalPairs());
+        if (level == null || !level.validate()) {
+            return false;
+        }
+
+        this.session = session;
         this.cards = generateDeck(level.getTotalPairs());
+
+        // Tạo GameState với số lượng cặp và hint từ level
+        this.gameState = new GameState(level.getTotalPairs(), level.getHintCount());
+
+        // Set danh sách thẻ vào GameState để findMatchPair() có thể tìm
+        this.gameState.setCards(this.cards);
+
+        // Set thời gian từ level
+        this.gameState.setTimeLeftSec(level.getTimeLimitSec());
+
         return true;
     }
 
     private List<Card> generateDeck(int totalPairs) {
+        if (totalPairs <= 0) {
+            return new ArrayList<>();
+        }
+
         List<String> values = new ArrayList<>(totalPairs * 2);
         for (int i = 1; i <= totalPairs; i++) {
-            String v = "C" + i;
-            values.add(v);
-            values.add(v);
+            String value = "C" + i;
+            values.add(value);
+            values.add(value);
         }
+
         Collections.shuffle(values);
 
         List<Card> deck = new ArrayList<>(values.size());
         for (int i = 0; i < values.size(); i++) {
             deck.add(new Card(i + 1, values.get(i)));
         }
+
         return deck;
     }
 
     public void restore(GameSession session, GameState gameState, List<Card> cards) {
         this.session = session;
         this.gameState = gameState;
-        this.cards = cards;
+        this.cards = (cards != null) ? cards : new ArrayList<>();
+
+        if (this.gameState != null) {
+            this.gameState.setCards(this.cards);
+        }
     }
 
     public void saveProgress(Path savePath) throws IOException {
@@ -57,7 +81,16 @@ public class GameEngine {
         restore(loaded.getSession(), loaded.getGameState(), loaded.getCards());
     }
 
-    public GameSession getSession() { return session; }
-    public GameState getGameState() { return gameState; }
-    public List<Card> getCards() { return cards; }
+    // ===== GETTERS =====
+    public GameSession getSession() {
+        return session;
+    }
+
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    public List<Card> getCards() {
+        return cards;
+    }
 }

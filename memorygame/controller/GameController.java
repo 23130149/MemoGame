@@ -3,19 +3,19 @@ package memorygame.controller;
 import memorygame.model.Card;
 import memorygame.model.CardState;
 import memorygame.model.GameEngine;
+import memorygame.model.GameState;
 import memorygame.view.GameBoardPanel;
 
 import javax.swing.Timer;
 
 public class GameController {
     private static final int MATCH_POINTS = 10;
-    private static final int NO_MATCH_DELAY_MS = 1000;
-    private static final int HINT_DISPLAY_MS = 2000;  // 2 giây
+    private static final int FLIP_DELAY_MS = 1000;
+    private static final int HINT_DISPLAY_MS = 2000;
 
     private final GameEngine engine;
     private final GameBoardPanel boardPanel;
     private final CardFlipController cardFlipController;
-    private static final int FLIP_DELAY_MS = 1000;
 
     public GameController(GameEngine engine, GameBoardPanel boardPanel) {
         this.engine = engine;
@@ -32,11 +32,11 @@ public class GameController {
             return;
         }
 
-        // Flip thẻ lên
+        GameState gameState = engine.getGameState();
+
+        // Lật thẻ lên
         cardFlipController.flipCardFaceUp(clickedCard);
         boardPanel.repaintCard(clickedCard);
-
-        var gameState = engine.getGameState();
 
         // Nếu chưa có thẻ đầu tiên
         if (gameState.getFirstCard() == null) {
@@ -49,84 +49,95 @@ public class GameController {
             return;
         }
 
-        // Có thẻ thứ hai
+        // Có thẻ thứ hai - lock board và kiểm tra match
         gameState.setSecondCard(clickedCard);
         gameState.incrementMoves();
         gameState.lockBoard(true);
         boardPanel.setBoardLocked(true);
 
-        // Kiểm tra match sau delay
+        // Delay trước khi kiểm tra match
         new Timer(FLIP_DELAY_MS, e -> {
             checkMatch();
-            ((Timer)e.getSource()).stop();
+            ((Timer) e.getSource()).stop();
         }).start();
     }
 
-    // public wrapper để tests / các lớp khác có thể gọi
     public void onCardClick(Card card) {
         handleCardClick(card);
     }
 
     private void checkMatch() {
-        var gameState = engine.getGameState();
+        GameState gameState = engine.getGameState();
         Card first = gameState.getFirstCard();
         Card second = gameState.getSecondCard();
 
         if (first == null || second == null) {
-            // không đủ dữ kiện
-            gameState.resetTurnState();
-            gameState.lockBoard(false);
-            boardPanel.setBoardLocked(false);
+            resetTurn();
             return;
         }
 
         if (first.getValue().equals(second.getValue())) {
             // ✓ Match thành công
-            first.setState(CardState.MATCHED);
-            second.setState(CardState.MATCHED);
-            gameState.decrementRemainingPairs();
-            // dùng hệ số điểm từ level (nếu có)
-            if (engine.getSession() != null && engine.getSession().getLevel() != null) {
-                gameState.updateScore((int)(100 * engine.getSession().getLevel().getScoreMultiplier()));
-            } else {
-                gameState.updateScore(MATCH_POINTS);
-            }
-            boardPanel.showMatchEffect(first, second);
-
-            if (gameState.getRemainingPairs() == 0) {
-                boardPanel.showGameOver(gameState.getScore(), gameState.getMovesCount());
-            }
+            handleMatchSuccess(first, second, gameState);
         } else {
             // ✗ Không match
-            cardFlipController.flipCardFaceDown(first);
-            cardFlipController.flipCardFaceDown(second);
-            boardPanel.showNoMatchEffect(first, second);
-            boardPanel.repaintCard(first);
-            boardPanel.repaintCard(second);
+            handleMatchFailed(first, second, gameState);
         }
 
+        resetTurn();
+    }
+
+    private void handleMatchSuccess(Card first, Card second, GameState gameState) {
+        // Đánh dấu thẻ đã match
+        first.setState(CardState.MATCHED);
+        second.setState(CardState.MATCHED);
+        gameState.decrementRemainingPairs();
+
+        // Cộng điểm theo hệ số difficulty
+        if (engine.getSession() != null && engine.getSession().getLevel() != null) {
+            int points = (int) (100 * engine.getSession().getLevel().getScoreMultiplier());
+            gameState.updateScore(points);
+        } else {
+            gameState.updateScore(MATCH_POINTS);
+        }
+        boardPanel.showMatchEffect(first, second);
+
+        if (gameState.getRemainingPairs() == 0) {
+            boardPanel.showGameOver(gameState.getScore(), gameState.getMovesCount());
+        }
+    }
+
+    private void handleMatchFailed(Card first, Card second, GameState gameState) {
+        // Lật lại thẻ
+        cardFlipController.flipCardFaceDown(first);
+        cardFlipController.flipCardFaceDown(second);
+        boardPanel.showNoMatchEffect(first, second);
+        boardPanel.repaintCard(first);
+        boardPanel.repaintCard(second);
+    }
+
+    private void resetTurn() {
+        GameState gameState = engine.getGameState();
         gameState.resetTurnState();
         gameState.lockBoard(false);
         boardPanel.setBoardLocked(false);
     }
 
-    private boolean isValidSelection(Card card) {
-        if (card.isMatched()) return false;
-        return card.getState() != CardState.FACE_UP;
-    }
-
+    // ===== HINT LOGIC =====
     public void onHintClick() {
-        var gameState = engine.getGameState();
+        GameState gameState = engine.getGameState();
 
-        if (!checkGameState()) {
+        // Kiểm tra điều kiện sử dụng gợi ý
+        if (!canUseHint(gameState)) {
             return;
         }
 
-        // khóa bàn, trừ lượt hint
+        // Khóa board và trừ lượt hint
         gameState.lockBoard(true);
         gameState.decrementHint();
         boardPanel.updateHintDisplay(gameState.getHintCount());
 
+        // Tìm cặp thẻ để gợi ý
         Card[] pair = gameState.findMatchPair();
         if (pair == null) {
             gameState.lockBoard(false);
@@ -134,18 +145,41 @@ public class GameController {
             return;
         }
 
-        Card cardX = pair[0];
-        Card cardY = pair[1];
+        // Lật 2 thẻ lên
+        displayHint(pair[0], pair[1], gameState);
+    }
 
+    private boolean canUseHint(GameState gameState) {
+        // Điều kiện 1: Còn lượt gợi ý
+        if (gameState.getHintCount() <= 0) {
+            boardPanel.showNotify("Bạn đã hết lượt gợi ý.");
+            return false;
+        }
+
+        // Điều kiện 2: Board không bị khóa
+        if (gameState.isLocked()) {
+            boardPanel.showNotify("Board đang bị khóa. Vui lòng chờ.");
+            return false;
+        }
+
+        // Điều kiện 3: Không có thẻ nào đang mở
+        if (gameState.getFirstCard() != null || gameState.getSecondCard() != null) {
+            boardPanel.showNotify("Hoàn thành lượt hiện tại trước khi dùng gợi ý.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void displayHint(Card cardX, Card cardY, GameState gameState) {
+        // Lật lên
         cardX.setState(CardState.FACE_UP);
         cardY.setState(CardState.FACE_UP);
         boardPanel.repaintCard(cardX);
         boardPanel.repaintCard(cardY);
-
-        // [Animation] Lật tạm 2 thẻ lên
         boardPanel.showHintEffect(cardX, cardY);
 
-        // Hiển thị và ẩn gợi ý sau HINT_DISPLAY_MS
+        // Lật lại sau HINT_DISPLAY_MS
         Timer hintTimer = new Timer(HINT_DISPLAY_MS, e -> {
             if (!cardX.isMatched()) {
                 cardX.setState(CardState.FACE_DOWN);
@@ -159,35 +193,13 @@ public class GameController {
             boardPanel.hideHintEffect(cardX, cardY);
             gameState.lockBoard(false);
             boardPanel.setBoardLocked(false);
-            ((Timer)e.getSource()).stop();
+            ((Timer) e.getSource()).stop();
         });
         hintTimer.setRepeats(false);
         hintTimer.start();
     }
 
-    private boolean checkGameState() {
-        var gameState = engine.getGameState();
-        // Điều kiện 1: hintCount > 0
-        if (gameState.getHintCount() <= 0) {
-            boardPanel.showNotify("Bạn đã hết lượt gợi ý.");
-            return false;
-        }
-
-        // Điều kiện 2: boardLocked = false
-        if (gameState.isLocked()) {
-            boardPanel.showNotify("Board đang bị khóa. Vui lòng chờ.");
-            return false;
-        }
-
-        // Điều kiện 3: không có thẻ đang mở
-        if (gameState.getFirstCard() != null || gameState.getSecondCard() != null) {
-            boardPanel.showNotify("Hoàn thành lượt hiện tại trước khi dùng gợi ý.");
-            return false;
-        }
-
-        return true;
-    }
-
+    // ===== GETTERS =====
     public GameEngine getEngine() {
         return engine;
     }

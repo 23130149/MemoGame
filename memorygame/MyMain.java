@@ -9,9 +9,6 @@ import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/**
- * Entry point - man hinh chon cap do + nut tiep tuc.
- */
 public class MyMain {
 
     private static final Path SAVE_FILE = Paths.get("memorygame_save.dat");
