@@ -1,5 +1,7 @@
 package memorygame.model;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 public class GameState {
@@ -145,21 +147,14 @@ public class GameState {
             return null;
         }
 
-        for (int i = 0; i < cards.size(); i++) {
-            Card first = cards.get(i);
-            if (!canUseForHint(first)) {
-                continue;
-            }
-
-            for (int j = i + 1; j < cards.size(); j++) {
-                Card second = cards.get(j);
-                if (!canUseForHint(second)) {
-                    continue;
+        Map<String, Card> unseenMatches = new HashMap<>();
+        for (Card card : cards) {
+            if (canUseForHint(card)) {
+                String value = card.getValue();
+                if (unseenMatches.containsKey(value)) {
+                    return new Card[] { unseenMatches.get(value), card };
                 }
-
-                if (first.getValue().equals(second.getValue())) {
-                    return new Card[] { first, second };
-                }
+                unseenMatches.put(value, card);
             }
         }
 
