@@ -11,7 +11,7 @@ import javax.swing.Timer;
 public class GameController {
     private static final int MATCH_POINTS = 10;
     private static final int FLIP_DELAY_MS = 1000;
-    private static final int HINT_DISPLAY_MS = 2000;
+    private static final int HINT_DELAY_MS = 1500;
 
     private final GameEngine engine;
     private final GameBoardPanel boardPanel;
@@ -123,12 +123,11 @@ public class GameController {
         boardPanel.setBoardLocked(false);
     }
 
-    // ===== HINT LOGIC =====
     public void onHintClick() {
         GameState gameState = engine.getGameState();
 
         // Kiểm tra điều kiện sử dụng gợi ý
-        if (!canUseHint(gameState)) {
+        if (!checkGameState(gameState)) {
             return;
         }
 
@@ -145,34 +144,9 @@ public class GameController {
             return;
         }
 
-        // Lật 2 thẻ lên
-        displayHint(pair[0], pair[1], gameState);
-    }
+        Card cardX = pair[0];
+        Card cardY = pair[1];
 
-    private boolean canUseHint(GameState gameState) {
-        // Điều kiện 1: Còn lượt gợi ý
-        if (gameState.getHintCount() <= 0) {
-            boardPanel.showNotify("Bạn đã hết lượt gợi ý.");
-            return false;
-        }
-
-        // Điều kiện 2: Board không bị khóa
-        if (gameState.isLocked()) {
-            boardPanel.showNotify("Board đang bị khóa. Vui lòng chờ.");
-            return false;
-        }
-
-        // Điều kiện 3: Không có thẻ nào đang mở
-        if (gameState.getFirstCard() != null || gameState.getSecondCard() != null) {
-            boardPanel.showNotify("Hoàn thành lượt hiện tại trước khi dùng gợi ý.");
-            return false;
-        }
-
-        return true;
-    }
-
-    private void displayHint(Card cardX, Card cardY, GameState gameState) {
-        // Lật lên
         cardX.setState(CardState.FACE_UP);
         cardY.setState(CardState.FACE_UP);
         boardPanel.repaintCard(cardX);
@@ -180,7 +154,7 @@ public class GameController {
         boardPanel.showHintEffect(cardX, cardY);
 
         // Lật lại sau HINT_DISPLAY_MS
-        Timer hintTimer = new Timer(HINT_DISPLAY_MS, e -> {
+        Timer hintTimer = new Timer(HINT_DELAY_MS, e -> {
             if (!cardX.isMatched()) {
                 cardX.setState(CardState.FACE_DOWN);
                 boardPanel.repaintCard(cardX);
@@ -193,10 +167,28 @@ public class GameController {
             boardPanel.hideHintEffect(cardX, cardY);
             gameState.lockBoard(false);
             boardPanel.setBoardLocked(false);
-            ((Timer) e.getSource()).stop();
         });
         hintTimer.setRepeats(false);
         hintTimer.start();
+    }
+
+    private boolean checkGameState(GameState gameState) {
+        if (gameState.getHintCount() <= 0) {
+            boardPanel.showNotify("Bạn đã hết lượt gợi ý.");
+            return false;
+        }
+
+        if (gameState.isLocked()) {
+            boardPanel.showNotify("Board đang bị khóa. Vui lòng chờ.");
+            return false;
+        }
+
+        if (gameState.getFirstCard() != null || gameState.getSecondCard() != null) {
+            boardPanel.showNotify("Hoàn thành lượt hiện tại trước khi dùng gợi ý.");
+            return false;
+        }
+
+        return true;
     }
 
     // ===== GETTERS =====
