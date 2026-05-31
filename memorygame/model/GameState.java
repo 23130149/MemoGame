@@ -169,7 +169,7 @@ public class GameState {
 
     // ===== STATE RESTORATION (For Continue Game) =====
     public void restoreState(int score, int movesCount, int remainingPairs,
-                             boolean boardLocked, Card firstCard, Card secondCard) {
+            boolean boardLocked, Card firstCard, Card secondCard) {
         this.score = Math.max(0, score);
         this.movesCount = Math.max(0, movesCount);
         this.remainingPairs = Math.max(0, remainingPairs);

@@ -123,20 +123,38 @@ public class GameController {
         boardPanel.setBoardLocked(false);
     }
 
+    /**
+     * UC-07 / UC-08: Xử lý sự kiện khi người chơi nhấn nút "Gợi ý".
+     */
     public void onHintClick() {
+        // Bước 1: UI triggers onHintClick()
+        // → Người chơi nhấn nút "Gợi ý" trên giao diện, sự kiện
+        // được chuyển đến Controller thông qua callback.
         GameState gameState = engine.getGameState();
 
-        // Kiểm tra điều kiện sử dụng gợi ý
+        // Bước 2: Validate state (checkGameState)
+        // → Kiểm tra: còn lượt hint? Board có đang khóa? Có thẻ
+        // đang được lật dở? Nếu vi phạm → trả về ngay, không
+        // thực hiện gợi ý.
         if (!checkGameState(gameState)) {
             return;
         }
 
-        // Khóa board và trừ lượt hint
+        // Bước 3: lockBoard(true)
+        // → Khóa toàn bộ board để ngăn người chơi tương tác trong
+        // khi hiệu ứng gợi ý đang hiển thị.
         gameState.lockBoard(true);
+
+        // Bước 4: decrementHint() and update UI display
+        // → Trừ 1 lượt gợi ý trong GameState, sau đó cập nhật
+        // số lượt hint còn lại trên giao diện.
         gameState.decrementHint();
         boardPanel.updateHintDisplay(gameState.getHintCount());
 
-        // Tìm cặp thẻ để gợi ý
+        // Bước 5: Call findMatchPair()
+        // → Ủy thác cho GameState tìm một cặp thẻ chưa match và
+        // đang úp (FACE_DOWN) có cùng giá trị. Nếu không tìm
+        // thấy → mở khóa board và thông báo cho người chơi.
         Card[] pair = gameState.findMatchPair();
         if (pair == null) {
             gameState.lockBoard(false);
@@ -147,14 +165,27 @@ public class GameController {
         Card cardX = pair[0];
         Card cardY = pair[1];
 
+        // Bước 6: Set cards FACE_UP and show UI Hint Effect
+        // → Lật 2 thẻ lên (FACE_UP), repaint để hiển thị mặt
+        // trước, đồng thời kích hoạt hiệu ứng viền sáng
+        // (highlight) trên giao diện.
         cardX.setState(CardState.FACE_UP);
         cardY.setState(CardState.FACE_UP);
         boardPanel.repaintCard(cardX);
         boardPanel.repaintCard(cardY);
         boardPanel.showHintEffect(cardX, cardY);
 
-        // Lật lại sau HINT_DISPLAY_MS
+        // Bước 7: Start Timer (1500ms delay)
+        // → Khởi tạo Timer với độ trễ HINT_DELAY_MS (1500ms) để
+        // người chơi có thời gian ghi nhớ vị trí cặp thẻ.
+        // Timer chỉ chạy 1 lần (setRepeats = false).
         Timer hintTimer = new Timer(HINT_DELAY_MS, e -> {
+
+            // Bước 8: Timer ends -> Revert cards to FACE_DOWN if not
+            // matched, hide effect
+            // → Sau 1500ms, kiểm tra từng thẻ: nếu chưa được
+            // match bởi người chơi trong thời gian chờ → lật
+            // úp lại (FACE_DOWN). Tắt hiệu ứng gợi ý.
             if (!cardX.isMatched()) {
                 cardX.setState(CardState.FACE_DOWN);
                 boardPanel.repaintCard(cardX);
@@ -165,6 +196,10 @@ public class GameController {
             }
 
             boardPanel.hideHintEffect(cardX, cardY);
+
+            // Bước 9: lockBoard(false)
+            // → Mở khóa board, cho phép người chơi tiếp tục
+            // tương tác bình thường với các thẻ.
             gameState.lockBoard(false);
             boardPanel.setBoardLocked(false);
         });
@@ -172,6 +207,14 @@ public class GameController {
         hintTimer.start();
     }
 
+    /**
+     * UC-07 / UC-08 — Bước 2: Validate trạng thái game trước khi
+     * thực hiện gợi ý.
+     * Điều kiện hợp lệ:
+     * Còn lượt gợi ý ({@code hintCount > 0})
+     * Board không bị khóa ({@code !isLocked()})
+     * Không có thẻ đang trong lượt lật dở
+     */
     private boolean checkGameState(GameState gameState) {
         if (gameState.getHintCount() <= 0) {
             boardPanel.showNotify("Bạn đã hết lượt gợi ý.");
