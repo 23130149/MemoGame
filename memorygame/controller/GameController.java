@@ -125,6 +125,7 @@ public class GameController {
 
     /**
      * UC-07 / UC-08: Xử lý sự kiện khi người chơi nhấn nút "Gợi ý".
+     * [Thắng - UC07/UC08]
      */
     public void onHintClick() {
         // Bước 1: UI triggers onHintClick()
@@ -145,22 +146,21 @@ public class GameController {
         // khi hiệu ứng gợi ý đang hiển thị.
         gameState.lockBoard(true);
 
-        // Bước 4: decrementHint() and update UI display
-        // → Trừ 1 lượt gợi ý trong GameState, sau đó cập nhật
-        // số lượt hint còn lại trên giao diện.
-        gameState.decrementHint();
-        boardPanel.updateHintDisplay(gameState.getHintCount());
-
-        // Bước 5: Call findMatchPair()
-        // → Ủy thác cho GameState tìm một cặp thẻ chưa match và
-        // đang úp (FACE_DOWN) có cùng giá trị. Nếu không tìm
-        // thấy → mở khóa board và thông báo cho người chơi.
+        // Bước 4: findMatchPair() TRƯỚC khi trừ hint
+        // [Sửa lỗi UC07 - Thắng]: Tìm cặp thẻ hợp lệ trước.
+        // Nếu không tìm thấy → mở khóa board, thông báo, KHÔNG trừ hint.
         Card[] pair = gameState.findMatchPair();
         if (pair == null) {
             gameState.lockBoard(false);
             boardPanel.showNotify("Không tìm thấy cặp để gợi ý.");
-            return;
+            return; // Không decrementHint() → hintCount không bị trừ oan
         }
+
+        // Bước 5: decrementHint() chỉ khi đã tìm thấy cặp hợp lệ
+        // [Sửa lỗi UC07 - Thắng]: Đảm bảo hint chỉ bị trừ khi
+        // thực sự hiển thị gợi ý cho người chơi.
+        gameState.decrementHint();
+        boardPanel.updateHintDisplay(gameState.getHintCount());
 
         Card cardX = pair[0];
         Card cardY = pair[1];
