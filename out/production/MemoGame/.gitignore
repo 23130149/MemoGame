@@ -4,5 +4,6 @@ out/
 *.iml
 *.zip
 *.dat
+target/
 .idea/
 /lib/
