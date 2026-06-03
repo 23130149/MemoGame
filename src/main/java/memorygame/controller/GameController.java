@@ -32,6 +32,10 @@ public class GameController {
             return;
         }
 
+        if (clickedCard.getState() == CardState.FACE_UP) {
+            return;
+        }
+
         GameState gameState = engine.getGameState();
 
         // Lật thẻ lên
@@ -108,12 +112,9 @@ public class GameController {
     }
 
     private void handleMatchFailed(Card first, Card second, GameState gameState) {
-        // Lật lại thẻ
+        boardPanel.showNoMatchEffect(first, second);
         cardFlipController.flipCardFaceDown(first);
         cardFlipController.flipCardFaceDown(second);
-        boardPanel.showNoMatchEffect(first, second);
-        boardPanel.repaintCard(first);
-        boardPanel.repaintCard(second);
     }
 
     private void resetTurn() {

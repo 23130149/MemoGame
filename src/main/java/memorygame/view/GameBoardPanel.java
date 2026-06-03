@@ -170,6 +170,9 @@ public class GameBoardPanel extends JPanel {
         }
 
         void showMatchEffect() {
+            setBackground(new Color(0x81C784));
+            setBorder(BorderFactory.createLineBorder(new Color(0x00E676), 3));
+            repaint();
             new Timer(MATCH_FLASH_DURATION, e -> {
                 updateAppearance();
                 ((Timer) e.getSource()).stop();
@@ -177,6 +180,9 @@ public class GameBoardPanel extends JPanel {
         }
 
         void showNoMatchEffect() {
+            setBackground(new Color(0xEF5350));
+            setBorder(BorderFactory.createLineBorder(new Color(0xFF1744), 3));
+            repaint();
             new Timer(MATCH_FLASH_DURATION, e -> {
                 updateAppearance();
                 ((Timer) e.getSource()).stop();
