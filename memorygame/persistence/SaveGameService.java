@@ -1,40 +1,25 @@
 package memorygame.persistence;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import memorygame.model.Card;
 import memorygame.model.DifficultyLevel;
 import memorygame.model.GameSession;
 import memorygame.model.GameState;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
 public final class SaveGameService {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
     private SaveGameService() {
     }
 
-    // ==================== CHECK ====================
-
     /**
-     * Kiểm tra file save tồn tại VÀ có thể đọc được (không bị corrupt)
+     * Kiểm tra xem file save có tồn tại không
      */
     public static boolean hasSave(Path savePath) {
-        if (!Files.exists(savePath) || !Files.isRegularFile(savePath)) return false;
-        try {
-            String json = Files.readString(savePath, StandardCharsets.UTF_8);
-            GameSaveData data = GSON.fromJson(json, GameSaveData.class);
-            return data != null
-                    && data.getCards() != null
-                    && !data.getCards().isEmpty()
-                    && data.getLevelId() > 0;
-        } catch (Exception e) {
-            return false; // file corrupt → coi như không có save
-        }
+        return Files.exists(savePath) && Files.isRegularFile(savePath);
     }
 
     /**
