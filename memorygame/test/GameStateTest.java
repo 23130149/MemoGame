@@ -1,11 +1,12 @@
-package memorygame.model;
+package memorygame.test;
 
-import org.junit.jupiter.api.Test;
+import memorygame.model.Card;
+import memorygame.model.GameState;
+import org.testng.annotations.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GameStateTest {
 
-    @Test
     void testInitialState() {
         GameState state = new GameState(5);
 
