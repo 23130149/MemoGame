@@ -36,7 +36,6 @@ public final class SaveGameService {
             return false; // file corrupt → coi như không có save
         }
     }
-
     /**
      * Xóa file save
      */
