@@ -1,5 +1,7 @@
-package memorygame.model;
+package memorygame.test;
 
+import memorygame.model.Card;
+import memorygame.model.CardState;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

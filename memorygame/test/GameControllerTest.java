@@ -1,5 +1,6 @@
-package memorygame.controller;
+package memorygame.test;
 
+import memorygame.controller.GameController;
 import memorygame.model.Card;
 import memorygame.model.CardState;
 import memorygame.model.GameState;
