@@ -126,8 +126,9 @@ public class GameController {
     /**
      * UC-07 / UC-08: Xử lý sự kiện khi người chơi nhấn nút "Gợi ý".
      * [Thắng - UC07/UC08]
+     * @return true nếu hint đã bắt đầu hiển thị, false nếu bị reject
      */
-    public void onHintClick() {
+    public boolean onHintClick() {
         // Bước 1: UI triggers onHintClick()
         // → Người chơi nhấn nút "Gợi ý" trên giao diện, sự kiện
         // được chuyển đến Controller thông qua callback.
@@ -138,7 +139,7 @@ public class GameController {
         // đang được lật dở? Nếu vi phạm → trả về ngay, không
         // thực hiện gợi ý.
         if (!checkGameState(gameState)) {
-            return;
+            return false;
         }
 
         // Bước 3: lockBoard(true)
@@ -155,7 +156,7 @@ public class GameController {
             gameState.lockBoard(false);
             boardPanel.setBoardLocked(false);
             boardPanel.showNotify("Không tìm thấy cặp để gợi ý.");
-            return; // Không decrementHint() → hintCount không bị trừ oan
+            return false; // Không decrementHint() → hintCount không bị trừ oan
         }
 
         // Bước 5: decrementHint() chỉ khi đã tìm thấy cặp hợp lệ
@@ -204,9 +205,13 @@ public class GameController {
             // tương tác bình thường với các thẻ.
             gameState.lockBoard(false);
             boardPanel.setBoardLocked(false);
+
+            // Bước 10: Thông báo hint animation kết thúc để UI re-enable nút
+            boardPanel.notifyHintAnimationDone();
         });
         hintTimer.setRepeats(false);
         hintTimer.start();
+        return true;
     }
 
     /**

@@ -24,6 +24,8 @@ public class GameBoardPanel extends JPanel {
     private int gridRows;
     private int gridCols;
     private Consumer<Card> onCardClicked;
+    private Consumer<Integer> onHintCountChanged;
+    private Runnable onHintAnimationDone;
     private boolean boardLocked = false;
 
     private CardButton[] cardButtons;
@@ -112,8 +114,25 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void updateHintDisplay(int remainingHints) {
-        // Cập nhật từ controller
-        System.out.println("Remaining hints: " + remainingHints);
+        // Thông báo cho UI layer (GameFlowController) cập nhật nút Gợi ý
+        if (onHintCountChanged != null) {
+            onHintCountChanged.accept(remainingHints);
+        }
+    }
+
+    public void setOnHintCountChanged(Consumer<Integer> callback) {
+        this.onHintCountChanged = callback;
+    }
+
+    public void setOnHintAnimationDone(Runnable callback) {
+        this.onHintAnimationDone = callback;
+    }
+
+    /** Được gọi khi hint timer kết thúc, để thông báo ngược lại UI layer. */
+    public void notifyHintAnimationDone() {
+        if (onHintAnimationDone != null) {
+            onHintAnimationDone.run();
+        }
     }
 
     public void showNotify(String message) {
