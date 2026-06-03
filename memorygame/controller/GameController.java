@@ -145,6 +145,7 @@ public class GameController {
         // → Khóa toàn bộ board để ngăn người chơi tương tác trong
         // khi hiệu ứng gợi ý đang hiển thị.
         gameState.lockBoard(true);
+        boardPanel.setBoardLocked(true);
 
         // Bước 4: findMatchPair() TRƯỚC khi trừ hint
         // [Sửa lỗi UC07 - Thắng]: Tìm cặp thẻ hợp lệ trước.
@@ -152,6 +153,7 @@ public class GameController {
         Card[] pair = gameState.findMatchPair();
         if (pair == null) {
             gameState.lockBoard(false);
+            boardPanel.setBoardLocked(false);
             boardPanel.showNotify("Không tìm thấy cặp để gợi ý.");
             return; // Không decrementHint() → hintCount không bị trừ oan
         }

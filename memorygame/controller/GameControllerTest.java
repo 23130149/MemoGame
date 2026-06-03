@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 class GameControllerTest {
 
@@ -23,7 +25,8 @@ class GameControllerTest {
     void setUp() {
         gameState = new GameState(2);
         engine = new GameEngine();
-        // restore engine với gameState test và danh sách card rỗng (tests thao tác trực tiếp trên Card objects)
+        // restore engine với gameState test và danh sách card rỗng (tests thao tác trực
+        // tiếp trên Card objects)
         engine.restore(null, gameState, new ArrayList<>());
 
         // GameBoardPanel hiện tại yêu cầu 2 tham số gridRows, gridCols
@@ -166,6 +169,7 @@ class GameControllerTest {
         assertEquals(scoreBeforeWait, scoreAfterWait);
         assertEquals(0, scoreAfterWait);
     }
+
     @Test
     void testCannotClickSameCardTwice() {
         // UC-04: Nhấn lại thẻ thứ nhất (thẻ vừa lật lên)
@@ -182,9 +186,10 @@ class GameControllerTest {
 
         // Kỳ vọng: secondCard vẫn null, không có phản hồi
         assertNull(gameState.getSecondCard());
-        assertEquals(card, gameState.getFirstCard());  // firstCard vẫn là card
-        assertFalse(gameState.isLocked());  // board vẫn unlock
+        assertEquals(card, gameState.getFirstCard()); // firstCard vẫn là card
+        assertFalse(gameState.isLocked()); // board vẫn unlock
     }
+
     @Test
     void testGameEndWhenLastPairMatched() throws InterruptedException {
         // UC-05: Ghép cặp cuối cùng (remainingPairs = 1)
@@ -195,7 +200,7 @@ class GameControllerTest {
         a2.setState(CardState.FACE_DOWN);
 
         // Setup: game chỉ còn 1 cặp thẻ
-        gameState = new GameState(1);  // remainingPairs = 1
+        gameState = new GameState(1); // remainingPairs = 1
         engine.restore(null, gameState, new ArrayList<>());
         controller = new GameController(engine, boardPanel);
 
@@ -217,6 +222,7 @@ class GameControllerTest {
         // Note: không thể test UI trực tiếp, nhưng state phải đúng
         assertEquals(1, gameState.getMovesCount());
     }
+
     @Test
     void testMovesCountIncrementsAfterMatch() {
         // UC-05: movesCount tăng sau mỗi lượt
@@ -291,6 +297,205 @@ class GameControllerTest {
         assertNull(gameState.getFirstCard());
         assertNull(gameState.getSecondCard());
         assertFalse(gameState.isLocked());
+    }
+
+    // UC-07: Yêu cầu gợi ý (Hint) — Test cases
+
+    /**
+     * Helper: Tạo GameBoardPanel stub không hiển thị JOptionPane.
+     * Override showNotify() và showGameOver() để tránh block test bởi dialog.
+     * Lưu lại message cuối cùng để assert nếu cần.
+     */
+    private static class StubBoardPanel extends GameBoardPanel {
+        String lastNotifyMessage = null;
+        int lastHintDisplayValue = -1;
+
+        StubBoardPanel() {
+            super(1, 2);
+        }
+
+        @Override
+        public void showNotify(String message) {
+            // Không hiện JOptionPane — chỉ ghi nhận message
+            lastNotifyMessage = message;
+        }
+
+        @Override
+        public void showGameOver(int score, int moves) {
+            // Không hiện JOptionPane
+        }
+
+        @Override
+        public void updateHintDisplay(int remainingHints) {
+            lastHintDisplayValue = remainingHints;
+        }
+
+        @Override
+        public void repaintCard(Card card) {
+            // No-op trong test — tránh NullPointerException vì cardButtons chưa init
+        }
+
+        @Override
+        public void showHintEffect(Card cardX, Card cardY) {
+            // No-op trong test
+        }
+
+        @Override
+        public void hideHintEffect(Card cardX, Card cardY) {
+            // No-op trong test
+        }
+    }
+
+    /**
+     * Helper: Setup hint test với danh sách thẻ cụ thể.
+     * Trả về controller mới sử dụng StubBoardPanel.
+     */
+    private HintTestContext setUpHintTest(int totalPairs, int hintCount, List<Card> cards) {
+        GameState state = new GameState(totalPairs, hintCount);
+        state.setCards(cards);
+
+        GameEngine eng = new GameEngine();
+        eng.restore(null, state, cards);
+
+        StubBoardPanel stub = new StubBoardPanel();
+        GameController ctrl = new GameController(eng, stub);
+
+        return new HintTestContext(state, eng, stub, ctrl);
+    }
+
+    private static class HintTestContext {
+        final GameState gameState;
+        final GameEngine engine;
+        final StubBoardPanel boardPanel;
+        final GameController controller;
+
+        HintTestContext(GameState gameState, GameEngine engine,
+                StubBoardPanel boardPanel, GameController controller) {
+            this.gameState = gameState;
+            this.engine = engine;
+            this.boardPanel = boardPanel;
+            this.controller = controller;
+        }
+    }
+
+    // UC-07 Test 1: Hết lượt gợi ý
+
+    @Test
+    void testHintWhenNoHintsRemaining() {
+        // hintCount = 0, có cặp thẻ hợp lệ
+        Card c1 = new Card(1, "A");
+        Card c2 = new Card(2, "A");
+        List<Card> cards = Arrays.asList(c1, c2);
+
+        HintTestContext ctx = setUpHintTest(1, 0, cards);
+        assertEquals(0, ctx.gameState.getHintCount());
+
+        ctx.controller.onHintClick();
+
+        // hint không bị trừ, board không bị lock
+        assertEquals(0, ctx.gameState.getHintCount());
+        assertFalse(ctx.gameState.isLocked());
+        assertNotNull(ctx.boardPanel.lastNotifyMessage); // Thông báo "hết lượt"
+    }
+
+    // UC-07 Test 2: Board đang bị khóa
+
+    @Test
+    void testHintWhenBoardLocked() {
+        // hintCount = 3, board đang locked (đang xử lý match)
+        Card c1 = new Card(1, "A");
+        Card c2 = new Card(2, "A");
+        List<Card> cards = Arrays.asList(c1, c2);
+
+        HintTestContext ctx = setUpHintTest(1, 3, cards);
+        ctx.gameState.lockBoard(true); // Giả lập board đang locked
+
+        int hintBefore = ctx.gameState.getHintCount();
+
+        ctx.controller.onHintClick();
+
+        // hint giữ nguyên, board vẫn locked (không đổi)
+        assertEquals(hintBefore, ctx.gameState.getHintCount());
+        assertTrue(ctx.gameState.isLocked()); // Vẫn locked như ban đầu
+    }
+
+    // UC-07 Test 3: Đang có thẻ lật dở (firstCard != null)
+
+    @Test
+    void testHintWhenCardFlipInProgress() {
+        // hintCount = 3, đang có firstCard (lượt chưa hoàn thành)
+        Card c1 = new Card(1, "A");
+        Card c2 = new Card(2, "A");
+        Card c3 = new Card(3, "B");
+        List<Card> cards = Arrays.asList(c1, c2, c3);
+
+        HintTestContext ctx = setUpHintTest(1, 3, cards);
+        ctx.gameState.setFirstCard(c3); // Giả lập: đang lật thẻ c3
+
+        int hintBefore = ctx.gameState.getHintCount();
+
+        ctx.controller.onHintClick();
+
+        // hint giữ nguyên, board không bị lock sai
+        assertEquals(hintBefore, ctx.gameState.getHintCount());
+        assertFalse(ctx.gameState.isLocked());
+        assertNotNull(ctx.boardPanel.lastNotifyMessage); // Thông báo "hoàn thành lượt"
+    }
+
+    // UC-07 Test 4: Không tìm thấy cặp thẻ hợp lệ
+
+    @Test
+    void testHintDoesNotDecrementWhenNoPairFound() {
+        // hintCount = 3, tất cả thẻ đã MATCHED → không có cặp
+        Card c1 = new Card(1, "A");
+        c1.setState(CardState.MATCHED);
+        Card c2 = new Card(2, "A");
+        c2.setState(CardState.MATCHED);
+        List<Card> cards = Arrays.asList(c1, c2);
+
+        HintTestContext ctx = setUpHintTest(0, 3, cards);
+
+        int hintBefore = ctx.gameState.getHintCount();
+
+        ctx.controller.onHintClick();
+
+        // hintCount giữ nguyên, board KHÔNG bị khóa vĩnh viễn
+        assertEquals(hintBefore, ctx.gameState.getHintCount());
+        assertFalse(ctx.gameState.isLocked());
+        assertNotNull(ctx.boardPanel.lastNotifyMessage); // "Không tìm thấy cặp"
+    }
+
+    // UC-07 Test 5: Hint hợp lệ — hintCount giảm đúng 1
+
+    @Test
+    void testHintDecrementsWhenPairFound() {
+        // hintCount = 3, có cặp "A" hợp lệ (FACE_DOWN)
+        Card c1 = new Card(1, "A");
+        c1.setState(CardState.FACE_DOWN);
+        Card c2 = new Card(2, "A");
+        c2.setState(CardState.FACE_DOWN);
+        Card c3 = new Card(3, "B");
+        c3.setState(CardState.FACE_DOWN);
+        Card c4 = new Card(4, "B");
+        c4.setState(CardState.FACE_DOWN);
+        List<Card> cards = Arrays.asList(c1, c2, c3, c4);
+
+        HintTestContext ctx = setUpHintTest(2, 3, cards);
+
+        int hintBefore = ctx.gameState.getHintCount();
+        assertEquals(3, hintBefore);
+
+        ctx.controller.onHintClick();
+
+        // hintCount giảm đúng 1
+        assertEquals(hintBefore - 1, ctx.gameState.getHintCount());
+        assertEquals(2, ctx.gameState.getHintCount());
+
+        // Board bị lock ngay sau khi hint bắt đầu (Timer đang chạy)
+        assertTrue(ctx.gameState.isLocked());
+
+        // updateHintDisplay đã được gọi với giá trị mới
+        assertEquals(2, ctx.boardPanel.lastHintDisplayValue);
     }
 
 }

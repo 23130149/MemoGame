@@ -64,6 +64,7 @@ public class GameBoardPanel extends JPanel {
     public void repaintCard(Card card) {
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == card) {
+                btn.updateAppearance();
                 btn.repaint();
                 break;
             }
@@ -195,7 +196,6 @@ public class GameBoardPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            updateAppearance();
 
             // Vẽ hiệu ứng highlight khi gợi ý
             if (hintHighlighted) {
