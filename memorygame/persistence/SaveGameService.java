@@ -11,10 +11,19 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
-
+/**
+ * SaveGameService - Nâng cấp:
+ * 1. Dùng JSON (Gson) thay vì Java Serialization
+ * 2. Backup file cũ trước khi ghi đè
+ * 3. Validate file trước khi load
+ * 4. hasSave() kiểm tra file có đọc được không
+ */
 public final class SaveGameService {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final String BACKUP_SUFFIX = ".bak";
+
     private SaveGameService() {
     }
 
@@ -28,10 +37,7 @@ public final class SaveGameService {
         try {
             String json = Files.readString(savePath, StandardCharsets.UTF_8);
             GameSaveData data = GSON.fromJson(json, GameSaveData.class);
-            return data != null
-                    && data.getCards() != null
-                    && !data.getCards().isEmpty()
-                    && data.getLevelId() > 0;
+            return data != null && data.getCards() != null && !data.getCards().isEmpty() && data.getLevelId() > 0;
         } catch (Exception e) {
             return false; // file corrupt → coi như không có save
         }
@@ -62,32 +68,50 @@ public final class SaveGameService {
         Integer secondId = state.getSecondCard() == null ? null : state.getSecondCard().getId();
 
         // Tạo GameSaveData với tất cả thông tin game
-        GameSaveData saveData = new GameSaveData(
-                session.getPlayerId(),
-                session.getLevel().getLevelId(),
-                state.getScore(),
-                state.getMovesCount(),
-                state.getRemainingPairs(),
-                state.isLocked(),
-                firstId,
-                secondId,
-                cardData,
-                state.getHintCount(),
-                state.getTimeLeftSec()
-        );
+        GameSaveData saveData = new GameSaveData(session.getPlayerId(), session.getLevel().getLevelId(), state.getScore(), state.getMovesCount(), state.getRemainingPairs(), state.isLocked(), firstId, secondId, cardData, state.getHintCount(), state.getTimeLeftSec());
 
-        // Tạo thư mục nếu chưa có
-        Path parent = savePath.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
+        // Backup file cũ trước khi ghi đè
+        backupIfExists(savePath);
+
+        // Ghi vào file tạm, sau đó rename (tránh mất dữ liệu nếu crash giữa chừng)
+        Path tempPath = savePath.resolveSibling(savePath.getFileName() + ".tmp");
 
         // Serialize vào file
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(savePath.toFile()))) {
-            out.writeObject(saveData);
+        try {
+            String json = GSON.toJson(saveData);
+            Files.writeString(tempPath, json, StandardCharsets.UTF_8);
+            Files.move(tempPath, savePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            // Xóa file tạm nếu lỗi
+            Files.deleteIfExists(tempPath);
+            throw e;
         }
     }
+    // ==================== BACKUP ====================
 
+    /**
+     * Backup file save cũ thành .bak trước khi ghi đè
+     */
+    private static void backupIfExists(Path savePath) {
+        if (!Files.exists(savePath)) return;
+        Path backupPath = savePath.resolveSibling(savePath.getFileName() + BACKUP_SUFFIX);
+        try {
+            Files.copy(savePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            // Không throw — backup thất bại không nên chặn việc lưu
+            System.err.println("[SaveGameService] Cảnh báo: không thể tạo backup: " + e.getMessage());
+        }
+    }
+    /**
+     * Khôi phục từ file backup (dùng khi file chính bị hỏng)
+     */
+    public static LoadedGame loadFromBackup(Path savePath) throws IOException, ClassNotFoundException {
+        Path backupPath = savePath.resolveSibling(savePath.getFileName() + BACKUP_SUFFIX);
+        if (!Files.exists(backupPath)) {
+            throw new FileNotFoundException("Không có file backup để khôi phục");
+        }
+        return load(backupPath);
+    }
     public static LoadedGame load(Path savePath) throws IOException, ClassNotFoundException {
         if (!hasSave(savePath)) {
             throw new FileNotFoundException("Không tìm thấy file save: " + savePath);
@@ -136,14 +160,7 @@ public final class SaveGameService {
         state.setTimeLeftSec(data.getTimeLeftSec());  //
 
         // Restore toàn bộ trạng thái
-        state.restoreState(
-                data.getScore(),
-                data.getMovesCount(),
-                data.getRemainingPairs(),
-                data.isBoardLocked(),
-                first,
-                second
-        );
+        state.restoreState(data.getScore(), data.getMovesCount(), data.getRemainingPairs(), data.isBoardLocked(), first, second);
 
         return new LoadedGame(session, state, cards);
     }
