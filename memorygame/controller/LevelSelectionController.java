@@ -72,14 +72,22 @@ public class LevelSelectionController {
         }
     }
 
+    /*
+     * UC-02 - Le VietKhanh: Phần nâng cấp xác nhận cấp độ.
+     * Tác dụng: kiểm tra người chơi đã chọn cấp độ hợp lệ, lưu cấu hình phiên chơi,
+     * chuyển GameSession sang trạng thái CONFIRMED, sau đó mới cho phép mở màn hình chơi.
+     */
     public boolean confirmLevel(GameSession session) {
+        // UC-02 - Le VietKhanh: Kiểm tra bắt buộc phải có cấp độ được chọn và phiên chơi tạm trước khi xác nhận.
         if (selectedLevel == null || session == null) {
             if (listener != null) {
+                // UC-02 - Le VietKhanh: Gửi lỗi về UI khi người chơi bấm Xác nhận nhưng chưa chọn cấp độ.
                 listener.onError("EX-01", "Vui lòng chọn cấp độ trước khi xác nhận.");
             }
             return false;
         }
 
+        // UC-02 - Le VietKhanh: Lưu thông tin cấp độ vào GameSession; nếu dữ liệu không hợp lệ thì dừng luồng xác nhận.
         if (!session.save()) {
             if (listener != null) {
                 listener.onError("EX-02", "Không thể lưu cấp độ. Vui lòng thử lại.");
@@ -87,6 +95,7 @@ public class LevelSelectionController {
             return false;
         }
 
+        // UC-02 - Le VietKhanh: Chuyển trạng thái phiên chơi từ LEVEL_SELECTED sang CONFIRMED.
         if (!session.confirm()) {
             if (listener != null) {
                 listener.onError("EX-02", "Không thể xác nhận cấp độ. Vui lòng thử lại.");
@@ -95,6 +104,7 @@ public class LevelSelectionController {
         }
 
         if (listener != null) {
+            // UC-02 - Le VietKhanh: Thông báo cho giao diện rằng cấp độ đã xác nhận thành công để chuyển sang màn hình game.
             listener.onLevelConfirmed(session);
         }
         return true;

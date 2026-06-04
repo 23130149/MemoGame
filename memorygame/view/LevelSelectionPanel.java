@@ -74,7 +74,9 @@ public class LevelSelectionPanel extends JPanel
         cancelBtn.addActionListener(e -> controller.cancelSelection(currentSession));
 
         styleButton(confirmBtn, new Color(0x2196F3), TEXT_PRIMARY);
+        // UC-02 - Le VietKhanh: Nút Xác nhận bị khóa ban đầu để bắt buộc người chơi chọn cấp độ trước.
         confirmBtn.setEnabled(false);
+        // UC-02 - Le VietKhanh: Khi người chơi bấm Xác nhận, gọi controller kiểm tra và xác nhận GameSession.
         confirmBtn.addActionListener(e -> controller.confirmLevel(currentSession));
 
         btnRow.add(cancelBtn);
@@ -129,12 +131,16 @@ public class LevelSelectionPanel extends JPanel
 
     private void onLevelCardClicked(DifficultyLevel level, int idx) {
         clearError();
+        // UC-02 - Le VietKhanh: Ghi nhận cấp độ người chơi vừa chọn trên giao diện.
         selectedLevel  = level;
+        // UC-02 - Le VietKhanh: Tạo phiên chơi tạm theo cấp độ đã chọn để chờ bước Xác nhận.
         currentSession = controller.selectLevel(level);
 
         for (int i = 0; i < levelCards.length; i++) {
+            // UC-02 - Le VietKhanh: Chỉ card đang được chọn được highlight, các card còn lại trở về bình thường.
             levelCards[i].setSelected(i == idx);
         }
+        // UC-02 - Le VietKhanh: Mở nút Xác nhận sau khi đã chọn cấp độ hợp lệ.
         confirmBtn.setEnabled(true);
     }
 
