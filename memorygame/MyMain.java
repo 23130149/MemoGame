@@ -2,6 +2,7 @@ package memorygame;
 
 import memorygame.controller.GameFlowController;
 import memorygame.model.GameEngine;
+import memorygame.model.PlayerProfile;
 import memorygame.view.LevelSelectionPanel;
 
 import javax.swing.*;
@@ -12,6 +13,7 @@ import java.nio.file.Paths;
 public class MyMain {
 
     private static final Path SAVE_FILE = Paths.get("memorygame_save.dat");
+    private static final PlayerProfile PLAYER_PROFILE = new PlayerProfile();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(MyMain::showLevelSelection);
@@ -39,16 +41,16 @@ public class MyMain {
             }
 
             frame.dispose();
-            GameFlowController.openGameWindow(engine, SAVE_FILE);
-        });
+            GameFlowController.openGameWindow(engine, SAVE_FILE, PLAYER_PROFILE, MyMain::showLevelSelection);
+        }, PLAYER_PROFILE.getGold());
 
         JButton continueBtn = new JButton("Tiếp tục");
         continueBtn.setFont(new Font("SansSerif", Font.BOLD, 14));
         continueBtn.setPreferredSize(new Dimension(140, 40));
         continueBtn.addActionListener(e ->
-                GameFlowController.continueGame(frame, SAVE_FILE, engine -> {
+                GameFlowController.continueGame(frame, SAVE_FILE, PLAYER_PROFILE, engine -> {
                     frame.dispose();
-                    GameFlowController.openGameWindow(engine, SAVE_FILE);
+                    GameFlowController.openGameWindow(engine, SAVE_FILE, PLAYER_PROFILE, MyMain::showLevelSelection);
                 })
         );
 

@@ -4,6 +4,7 @@ import memorygame.model.Card;
 import memorygame.model.DifficultyLevel;
 import memorygame.model.GameSession;
 import memorygame.model.GameState;
+import memorygame.model.PlayerProfile;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -30,6 +31,11 @@ public final class SaveGameService {
     }
 
     public static void save(Path savePath, GameSession session, GameState state, List<Card> cards) throws IOException {
+        save(savePath, session, state, cards, null);
+    }
+
+    public static void save(Path savePath, GameSession session, GameState state, List<Card> cards,
+            PlayerProfile playerProfile) throws IOException {
         if (session == null || state == null || cards == null || cards.isEmpty()) {
             throw new IllegalArgumentException("Dữ liệu game để lưu không hợp lệ.");
         }
@@ -47,6 +53,20 @@ public final class SaveGameService {
         Integer firstId = state.getFirstCard() == null ? null : state.getFirstCard().getId();
         Integer secondId = state.getSecondCard() == null ? null : state.getSecondCard().getId();
 
+        long playerGold = 0;
+        String selectedBackSkinId = "default_back";
+        String selectedFaceThemeId = "default_face";
+        Set<String> ownedBackSkinIds = new HashSet<>(Collections.singleton("default_back"));
+        Set<String> ownedFaceThemeIds = new HashSet<>(Collections.singleton("default_face"));
+
+        if (playerProfile != null) {
+            playerGold = playerProfile.getGold();
+            selectedBackSkinId = playerProfile.getSelectedBackSkinId();
+            selectedFaceThemeId = playerProfile.getSelectedFaceThemeId();
+            ownedBackSkinIds = new HashSet<>(playerProfile.getOwnedBackSkinIds());
+            ownedFaceThemeIds = new HashSet<>(playerProfile.getOwnedFaceThemeIds());
+        }
+
         // Tạo GameSaveData với tất cả thông tin game
         GameSaveData saveData = new GameSaveData(
                 session.getPlayerId(),
@@ -59,7 +79,12 @@ public final class SaveGameService {
                 secondId,
                 cardData,
                 state.getHintCount(),
-                state.getTimeLeftSec()
+                state.getTimeLeftSec(),
+                playerGold,
+                selectedBackSkinId,
+                selectedFaceThemeId,
+                ownedBackSkinIds,
+                ownedFaceThemeIds
         );
 
         // Tạo thư mục nếu chưa có
@@ -131,6 +156,15 @@ public final class SaveGameService {
                 second
         );
 
-        return new LoadedGame(session, state, cards);
+        PlayerProfile playerProfile = new PlayerProfile();
+        playerProfile.restoreFromSave(
+                data.getPlayerGold(),
+                data.getSelectedBackSkinId(),
+                data.getSelectedFaceThemeId(),
+                data.getOwnedBackSkinIds(),
+                data.getOwnedFaceThemeIds()
+        );
+
+        return new LoadedGame(session, state, cards, playerProfile);
     }
 }

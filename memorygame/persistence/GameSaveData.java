@@ -1,7 +1,10 @@
 package memorygame.persistence;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GameSaveData implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -17,6 +20,11 @@ public class GameSaveData implements Serializable {
     private final List<CardSaveData> cards;
     private final int hintCount;
     private final int timeLeftSec;
+    private final long playerGold;
+    private final String selectedBackSkinId;
+    private final String selectedFaceThemeId;
+    private final Set<String> ownedBackSkinIds;
+    private final Set<String> ownedFaceThemeIds;
 
     public GameSaveData(
             int playerId,
@@ -29,7 +37,12 @@ public class GameSaveData implements Serializable {
             Integer secondCardId,
             List<CardSaveData> cards,
             int hintCount,
-            int timeLeftSec
+            int timeLeftSec,
+            long playerGold,
+            String selectedBackSkinId,
+            String selectedFaceThemeId,
+            Set<String> ownedBackSkinIds,
+            Set<String> ownedFaceThemeIds
     ) {
         this.playerId = playerId;
         this.levelId = levelId;
@@ -42,6 +55,11 @@ public class GameSaveData implements Serializable {
         this.cards = cards;
         this.hintCount = hintCount;
         this.timeLeftSec = timeLeftSec;
+        this.playerGold = playerGold;
+        this.selectedBackSkinId = selectedBackSkinId;
+        this.selectedFaceThemeId = selectedFaceThemeId;
+        this.ownedBackSkinIds = new HashSet<>(ownedBackSkinIds);
+        this.ownedFaceThemeIds = new HashSet<>(ownedFaceThemeIds);
     }
 
     // ===== GETTERS =====
@@ -87,5 +105,31 @@ public class GameSaveData implements Serializable {
 
     public int getTimeLeftSec() {
         return timeLeftSec;
+    }
+
+    public long getPlayerGold() {
+        return playerGold;
+    }
+
+    public String getSelectedBackSkinId() {
+        return selectedBackSkinId;
+    }
+
+    public String getSelectedFaceThemeId() {
+        return selectedFaceThemeId;
+    }
+
+    public Set<String> getOwnedBackSkinIds() {
+        if (ownedBackSkinIds == null) {
+            return Collections.emptySet();
+        }
+        return Collections.unmodifiableSet(ownedBackSkinIds);
+    }
+
+    public Set<String> getOwnedFaceThemeIds() {
+        if (ownedFaceThemeIds == null) {
+            return Collections.emptySet();
+        }
+        return Collections.unmodifiableSet(ownedFaceThemeIds);
     }
 }
