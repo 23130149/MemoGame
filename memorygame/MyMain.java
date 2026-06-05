@@ -27,9 +27,7 @@ public class MyMain {
         int playerId = 1;
 
         LevelSelectionPanel panel = new LevelSelectionPanel(playerId, session -> {
-            // UC-02 - Le VietKhanh: Sau khi cấp độ được xác nhận, tạo GameEngine để khởi tạo bàn chơi.
             GameEngine engine = new GameEngine();
-            // UC-02 - Le VietKhanh: Dùng GameSession đã CONFIRMED để tạo số thẻ, số cặp và cấu hình bàn chơi theo cấp độ.
             if (!engine.initBoard(session)) {
                 JOptionPane.showMessageDialog(
                         frame,
@@ -40,7 +38,6 @@ public class MyMain {
                 return;
             }
 
-            // UC-02 - Le VietKhanh: Đóng màn hình chọn cấp độ và mở màn hình chơi chính.
             frame.dispose();
             GameFlowController.openGameWindow(engine, SAVE_FILE);
         });
