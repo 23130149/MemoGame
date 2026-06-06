@@ -18,27 +18,27 @@ public class LevelSelectionPanel extends JPanel
             new Color(0xFF9800),   // TB    – cam
             new Color(0xF44336),   // Khó   – đỏ
     };
-    private static final Color BG_COLOR       = new Color(0x1A1A2E);
-    private static final Color CARD_BG        = new Color(0x16213E);
-    private static final Color CARD_SELECTED  = new Color(0x0F3460);
-    private static final Color TEXT_PRIMARY   = Color.WHITE;
+    private static final Color BG_COLOR = new Color(0x1A1A2E);
+    private static final Color CARD_BG = new Color(0x16213E);
+    private static final Color CARD_SELECTED = new Color(0x0F3460);
+    private static final Color TEXT_PRIMARY = Color.WHITE;
     private static final Color TEXT_SECONDARY = new Color(0xB0BEC5);
 
     private final LevelSelectionController controller;
     private final Consumer<GameSession> onGameStart;  // callback khi bắt đầu trò chơi
 
     private final JPanel levelCardsPanel = new JPanel(new GridLayout(1, 3, 20, 0));
-    private final JButton confirmBtn  = new JButton("Xác nhận");
-    private final JButton cancelBtn   = new JButton("Trở về");
-    private final JLabel  errorLabel  = new JLabel(" ");
+    private final JButton confirmBtn = new JButton("Xác nhận");
+    private final JButton cancelBtn = new JButton("Trở về");
+    private final JLabel errorLabel = new JLabel(" ");
 
     private LevelCard[] levelCards;
     private DifficultyLevel selectedLevel = null;
-    private GameSession currentSession    = null;
+    private GameSession currentSession = null;
 
     public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart) {
-        this.onGameStart  = onGameStart;
-        this.controller   = new LevelSelectionController(playerId, this);
+        this.onGameStart = onGameStart;
+        this.controller = new LevelSelectionController(playerId, this);
 
         setBackground(BG_COLOR);
         setLayout(new BorderLayout(0, 24));
@@ -129,7 +129,7 @@ public class LevelSelectionPanel extends JPanel
 
     private void onLevelCardClicked(DifficultyLevel level, int idx) {
         clearError();
-        selectedLevel  = level;
+        selectedLevel = level;
         currentSession = controller.selectLevel(level);
 
         for (int i = 0; i < levelCards.length; i++) {
@@ -171,12 +171,12 @@ public class LevelSelectionPanel extends JPanel
     }
 
     private class LevelCard extends JButton {
-        private boolean selected = false;
         private final Color accentColor;
         private final DifficultyLevel level;
+        private boolean selected = false;
 
         LevelCard(DifficultyLevel level, Color accentColor) {
-            this.level       = level;
+            this.level = level;
             this.accentColor = accentColor;
 
             setLayout(new BorderLayout(0, 8));
