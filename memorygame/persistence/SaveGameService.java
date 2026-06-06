@@ -2,6 +2,7 @@ package memorygame.persistence;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import memorygame.model.Card;
 import memorygame.model.DifficultyLevel;
 import memorygame.model.GameSession;
@@ -117,12 +118,23 @@ public final class SaveGameService {
             throw new FileNotFoundException("Không tìm thấy file save: " + savePath);
         }
 
-        // Deserialize từ file
-        GameSaveData data;
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(savePath.toFile()))) {
-            data = (GameSaveData) in.readObject();
+        String json;
+        try {
+            json = Files.readString(savePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IOException("Không thể đọc file save", e);
         }
 
+        GameSaveData data;
+        try {
+            data = GSON.fromJson(json, GameSaveData.class);
+        } catch (JsonSyntaxException e) {
+            throw new IOException("File save bị hỏng hoặc sai định dạng", e);
+        }
+
+        if (data == null) {
+            throw new IOException("File save rỗng hoặc không hợp lệ");
+        }
         // Kiểm tra level ID hợp lệ
         DifficultyLevel.Level[] levels = DifficultyLevel.Level.values();
         int idx = data.getLevelId() - 1;
