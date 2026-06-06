@@ -4,7 +4,7 @@ import memorygame.model.PlayerProfile;
 import memorygame.model.ShopCatalog;
 import memorygame.model.ShopItem;
 
-// UC-15 - Le VietKhanh: Logic mua và trang bị vật phẩm bằng vàng trong cửa hàng.
+// UC-15 - Logic mua và trang bị chủ đề bằng vàng trong cửa hàng.
 public class ShopController {
 
     private final PlayerProfile playerProfile;
@@ -25,52 +25,41 @@ public class ShopController {
 
         if (isOwned(item)) {
             equip(item);
-            return ShopActionResult.success("Đã sử dụng vật phẩm: " + item.getName());
+            return ShopActionResult.success("Đã sử dụng chủ đề: " + item.getName());
         }
 
         if (!playerProfile.spendGold(item.getPrice())) {
-            return ShopActionResult.fail("Không đủ vàng để mua vật phẩm này.");
+            return ShopActionResult.fail("Không đủ vàng để mua chủ đề này.");
         }
 
         addOwnedItem(item);
         equip(item);
-        return ShopActionResult.success("Mua thành công và đã sử dụng: " + item.getName());
+
+        return ShopActionResult.success("Mua thành công và đã sử dụng chủ đề: " + item.getName());
     }
 
     public boolean isOwned(ShopItem item) {
         if (item == null || playerProfile == null) {
             return false;
         }
-        if (item.getType() == ShopItem.ItemType.BACK_SKIN) {
-            return playerProfile.ownsBackSkin(item.getId());
-        }
-        return playerProfile.ownsFaceTheme(item.getId());
+
+        return playerProfile.ownsTheme(item.getId());
     }
 
     public boolean isEquipped(ShopItem item) {
         if (item == null || playerProfile == null) {
             return false;
         }
-        if (item.getType() == ShopItem.ItemType.BACK_SKIN) {
-            return item.getId().equals(playerProfile.getSelectedBackSkinId());
-        }
-        return item.getId().equals(playerProfile.getSelectedFaceThemeId());
+
+        return item.getId().equals(playerProfile.getSelectedThemeId());
     }
 
     private void addOwnedItem(ShopItem item) {
-        if (item.getType() == ShopItem.ItemType.BACK_SKIN) {
-            playerProfile.addBackSkin(item.getId());
-        } else {
-            playerProfile.addFaceTheme(item.getId());
-        }
+        playerProfile.addTheme(item.getId());
     }
 
     private void equip(ShopItem item) {
-        if (item.getType() == ShopItem.ItemType.BACK_SKIN) {
-            playerProfile.setSelectedBackSkinId(item.getId());
-        } else {
-            playerProfile.setSelectedFaceThemeId(item.getId());
-        }
+        playerProfile.setSelectedThemeId(item.getId());
     }
 
     public static class ShopActionResult {

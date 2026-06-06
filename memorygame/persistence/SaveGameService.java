@@ -2,11 +2,7 @@ package memorygame.persistence;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import memorygame.model.Card;
-import memorygame.model.DifficultyLevel;
-import memorygame.model.GameSession;
-import memorygame.model.GameState;
-import memorygame.model.PlayerProfile;
+import memorygame.model.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -74,17 +70,13 @@ public final class SaveGameService {
         Integer secondId = state.getSecondCard() == null ? null : state.getSecondCard().getId();
 
         long playerGold = 0;
-        String selectedBackSkinId = "default_back";
-        String selectedFaceThemeId = "default_face";
-        Set<String> ownedBackSkinIds = new HashSet<>(Collections.singleton("default_back"));
-        Set<String> ownedFaceThemeIds = new HashSet<>(Collections.singleton("default_face"));
+        String selectedThemeId = ShopCatalog.DEFAULT_THEME_ID;
+        Set<String> ownedThemeIds = new HashSet<>(Collections.singleton(ShopCatalog.DEFAULT_THEME_ID));
 
         if (playerProfile != null) {
             playerGold = playerProfile.getGold();
-            selectedBackSkinId = playerProfile.getSelectedBackSkinId();
-            selectedFaceThemeId = playerProfile.getSelectedFaceThemeId();
-            ownedBackSkinIds = new HashSet<>(playerProfile.getOwnedBackSkinIds());
-            ownedFaceThemeIds = new HashSet<>(playerProfile.getOwnedFaceThemeIds());
+            selectedThemeId = playerProfile.getSelectedThemeId();
+            ownedThemeIds = new HashSet<>(playerProfile.getOwnedThemeIds());
         }
 
         // Tạo GameSaveData với tất cả thông tin game
@@ -101,10 +93,8 @@ public final class SaveGameService {
                 state.getHintCount(),
                 state.getTimeLeftSec(),
                 playerGold,
-                selectedBackSkinId,
-                selectedFaceThemeId,
-                ownedBackSkinIds,
-                ownedFaceThemeIds
+                selectedThemeId,
+                ownedThemeIds
         );
 
         // Tạo thư mục nếu chưa có
@@ -210,10 +200,8 @@ public final class SaveGameService {
         PlayerProfile playerProfile = new PlayerProfile();
         playerProfile.restoreFromSave(
                 data.getPlayerGold(),
-                data.getSelectedBackSkinId(),
-                data.getSelectedFaceThemeId(),
-                data.getOwnedBackSkinIds(),
-                data.getOwnedFaceThemeIds()
+                data.getSelectedThemeId(),
+                data.getOwnedThemeIds()
         );
 
         return new LoadedGame(session, state, cards, playerProfile);

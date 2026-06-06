@@ -6,28 +6,21 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-// Lưu trạng thái người chơi: vàng, skin/theme đang dùng và danh sách vật phẩm sở hữu.
+// Lưu trạng thái người chơi: vàng, chủ đề đang dùng và danh sách chủ đề sở hữu.
 public class PlayerProfile implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final String DEFAULT_BACK_SKIN_ID = "default_back";
-    private static final String DEFAULT_FACE_THEME_ID = "default_face";
 
     private long gold;
-    private String selectedBackSkinId;
-    private String selectedFaceThemeId;
-    private final Set<String> ownedBackSkinIds;
-    private final Set<String> ownedFaceThemeIds;
+    private String selectedThemeId;
+    private final Set<String> ownedThemeIds;
 
     public PlayerProfile() {
         this.gold = 0;
-        this.selectedBackSkinId = DEFAULT_BACK_SKIN_ID;
-        this.selectedFaceThemeId = DEFAULT_FACE_THEME_ID;
-        this.ownedBackSkinIds = new HashSet<>();
-        this.ownedFaceThemeIds = new HashSet<>();
+        this.selectedThemeId = ShopCatalog.DEFAULT_THEME_ID;
+        this.ownedThemeIds = new HashSet<>();
 
-        this.ownedBackSkinIds.add(DEFAULT_BACK_SKIN_ID);
-        this.ownedFaceThemeIds.add(DEFAULT_FACE_THEME_ID);
+        this.ownedThemeIds.add(ShopCatalog.DEFAULT_THEME_ID);
     }
 
     public long getGold() {
@@ -45,7 +38,9 @@ public class PlayerProfile implements Serializable {
     }
 
     public boolean spendGold(long amount) {
-        if (amount <= 0) return false;
+        if (amount <= 0) {
+            return false;
+        }
 
         if (gold >= amount) {
             gold -= amount;
@@ -55,51 +50,37 @@ public class PlayerProfile implements Serializable {
         return false;
     }
 
-    public String getSelectedBackSkinId() {
-        return selectedBackSkinId;
+    public String getSelectedThemeId() {
+        if (!ownsTheme(selectedThemeId)) {
+            return ShopCatalog.DEFAULT_THEME_ID;
+        }
+
+        return selectedThemeId;
     }
 
-    public void setSelectedBackSkinId(String selectedBackSkinId) {
-        if (ownsBackSkin(selectedBackSkinId)) {
-            this.selectedBackSkinId = selectedBackSkinId;
+    public void setSelectedThemeId(String selectedThemeId) {
+        if (ownsTheme(selectedThemeId)) {
+            this.selectedThemeId = selectedThemeId;
         }
     }
 
-    public String getSelectedFaceThemeId() {
-        return selectedFaceThemeId;
-    }
-
-    public void setSelectedFaceThemeId(String selectedFaceThemeId) {
-        if (ownsFaceTheme(selectedFaceThemeId)) {
-            this.selectedFaceThemeId = selectedFaceThemeId;
+    public Set<String> getOwnedThemeIds() {
+        if (ownedThemeIds == null) {
+            Set<String> defaultSet = new HashSet<>();
+            defaultSet.add(ShopCatalog.DEFAULT_THEME_ID);
+            return Collections.unmodifiableSet(defaultSet);
         }
+
+        return Collections.unmodifiableSet(ownedThemeIds);
     }
 
-    public Set<String> getOwnedBackSkinIds() {
-        return Collections.unmodifiableSet(ownedBackSkinIds);
+    public boolean ownsTheme(String themeId) {
+        return isValidItemId(themeId) && ownedThemeIds.contains(themeId);
     }
 
-    public Set<String> getOwnedFaceThemeIds() {
-        return Collections.unmodifiableSet(ownedFaceThemeIds);
-    }
-
-    public boolean ownsBackSkin(String skinId) {
-        return isValidItemId(skinId) && ownedBackSkinIds.contains(skinId);
-    }
-
-    public boolean ownsFaceTheme(String themeId) {
-        return isValidItemId(themeId) && ownedFaceThemeIds.contains(themeId);
-    }
-
-    public void addBackSkin(String skinId) {
-        if (isValidItemId(skinId)) {
-            ownedBackSkinIds.add(skinId);
-        }
-    }
-
-    public void addFaceTheme(String themeId) {
+    public void addTheme(String themeId) {
         if (isValidItemId(themeId)) {
-            ownedFaceThemeIds.add(themeId);
+            ownedThemeIds.add(themeId);
         }
     }
 
@@ -110,42 +91,29 @@ public class PlayerProfile implements Serializable {
 
         applySnapshot(
                 Math.max(0, other.getGold()),
-                other.getSelectedBackSkinId(),
-                other.getSelectedFaceThemeId(),
-                other.getOwnedBackSkinIds(),
-                other.getOwnedFaceThemeIds()
+                other.getSelectedThemeId(),
+                other.getOwnedThemeIds()
         );
     }
 
-    public void restoreFromSave(long gold, String selectedBackSkinId, String selectedFaceThemeId,
-            Set<String> ownedBackSkinIds, Set<String> ownedFaceThemeIds) {
-        applySnapshot(gold, selectedBackSkinId, selectedFaceThemeId, ownedBackSkinIds, ownedFaceThemeIds);
+    public void restoreFromSave(long gold, String selectedThemeId, Set<String> ownedThemeIds) {
+        applySnapshot(gold, selectedThemeId, ownedThemeIds);
     }
 
-    private void applySnapshot(long gold, String selectedBackSkinId, String selectedFaceThemeId,
-            Set<String> ownedBackSkinIds, Set<String> ownedFaceThemeIds) {
+    private void applySnapshot(long gold, String selectedThemeId, Set<String> ownedThemeIds) {
         this.gold = Math.max(0, gold);
 
-        this.ownedBackSkinIds.clear();
-        this.ownedFaceThemeIds.clear();
-        this.ownedBackSkinIds.add(DEFAULT_BACK_SKIN_ID);
-        this.ownedFaceThemeIds.add(DEFAULT_FACE_THEME_ID);
+        this.ownedThemeIds.clear();
+        this.ownedThemeIds.add(ShopCatalog.DEFAULT_THEME_ID);
 
-        if (ownedBackSkinIds != null) {
-            for (String skinId : ownedBackSkinIds) {
-                addBackSkin(skinId);
-            }
-        }
-        if (ownedFaceThemeIds != null) {
-            for (String themeId : ownedFaceThemeIds) {
-                addFaceTheme(themeId);
+        if (ownedThemeIds != null) {
+            for (String themeId : ownedThemeIds) {
+                addTheme(themeId);
             }
         }
 
-        this.selectedBackSkinId = DEFAULT_BACK_SKIN_ID;
-        this.selectedFaceThemeId = DEFAULT_FACE_THEME_ID;
-        setSelectedBackSkinId(selectedBackSkinId);
-        setSelectedFaceThemeId(selectedFaceThemeId);
+        this.selectedThemeId = ShopCatalog.DEFAULT_THEME_ID;
+        setSelectedThemeId(selectedThemeId);
     }
 
     private boolean isValidItemId(String itemId) {
