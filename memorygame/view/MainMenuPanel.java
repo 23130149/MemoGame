@@ -18,6 +18,9 @@ public class MainMenuPanel extends JPanel {
     private static final Color ACCENT_RED = new Color(0xE53935);
     private static final Color TEXT_PRIMARY = Color.WHITE;
     private static final Color TEXT_SECONDARY = new Color(0xB0BEC5);
+    private static final Color CARD_PATTERN_COLOR = new Color(255, 255, 255, 8);
+
+    private static final String FONT_FAMILY = "Segoe UI";
 
     private Runnable onStartGame;
     private Runnable onContinueGame;
@@ -30,7 +33,7 @@ public class MainMenuPanel extends JPanel {
         setBorder(new EmptyBorder(0, 0, 0, 0));
 
         add(buildHeaderPanel(), BorderLayout.NORTH);
-        add(buildButtonPanel(), BorderLayout.CENTER);
+        add(buildCenterPanel(), BorderLayout.CENTER);
         add(buildFooterPanel(), BorderLayout.SOUTH);
     }
 
@@ -50,11 +53,37 @@ public class MainMenuPanel extends JPanel {
         this.onExitGame = callback;
     }
 
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // Ve hoa tiet the bai mo nhat tren nen
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(CARD_PATTERN_COLOR);
+
+        int cardW = 60;
+        int cardH = 80;
+        int arc = 10;
+        int[][] positions = {
+                {40, 60}, {160, 30}, {300, 80}, {450, 20}, {600, 70},
+                {750, 40}, {900, 60}, {80, 500}, {250, 550}, {400, 520},
+                {550, 560}, {700, 510}, {850, 540}, {130, 300}, {380, 280},
+                {620, 310}, {800, 290}, {50, 180}, {500, 170}, {730, 180}
+        };
+        for (int[] pos : positions) {
+            if (pos[0] < getWidth() && pos[1] < getHeight()) {
+                g2.drawRoundRect(pos[0], pos[1], cardW, cardH, arc, arc);
+            }
+        }
+        g2.dispose();
+    }
+
     private JPanel buildHeaderPanel() {
         JPanel header = new JPanel();
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        header.setBackground(BG_COLOR);
-        header.setBorder(new EmptyBorder(60, 40, 20, 40));
+        header.setOpaque(false);
+        header.setBorder(new EmptyBorder(50, 40, 10, 40));
 
         JLabel titleLabel = new JLabel("MEMORY CARD GAME") {
             @Override
@@ -76,17 +105,17 @@ public class MainMenuPanel extends JPanel {
                 g2.dispose();
             }
         };
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 42));
+        titleLabel.setFont(new Font(FONT_FAMILY, Font.BOLD, 46));
         titleLabel.setForeground(ACCENT_BLUE);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        titleLabel.setPreferredSize(new Dimension(600, 55));
-        titleLabel.setMaximumSize(new Dimension(600, 55));
+        titleLabel.setPreferredSize(new Dimension(700, 60));
+        titleLabel.setMaximumSize(new Dimension(700, 60));
         header.add(titleLabel);
 
-        header.add(Box.createVerticalStrut(12));
+        header.add(Box.createVerticalStrut(14));
 
         JLabel subtitleLabel = new JLabel("Tìm cặp thẻ - Rèn trí nhớ");
-        subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        subtitleLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 17));
         subtitleLabel.setForeground(TEXT_SECONDARY);
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(subtitleLabel);
@@ -108,67 +137,102 @@ public class MainMenuPanel extends JPanel {
             }
         };
         line.setOpaque(false);
-        line.setPreferredSize(new Dimension(200, 3));
-        line.setMaximumSize(new Dimension(200, 3));
+        line.setPreferredSize(new Dimension(240, 3));
+        line.setMaximumSize(new Dimension(240, 3));
         line.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(line);
 
         return header;
     }
 
-    private JPanel buildButtonPanel() {
+    private JPanel buildCenterPanel() {
         JPanel wrapper = new JPanel();
-        wrapper.setBackground(BG_COLOR);
+        wrapper.setOpaque(false);
         wrapper.setLayout(new GridBagLayout());
 
-        JPanel buttonContainer = new JPanel();
-        buttonContainer.setBackground(BG_COLOR);
-        buttonContainer.setLayout(new BoxLayout(buttonContainer, BoxLayout.Y_AXIS));
+        // Card container boc nhom nut
+        JPanel cardContainer = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                // Nen card
+                g2.setColor(new Color(0x16213E, true));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
+                // Vien
+                g2.setColor(new Color(0x0F3460));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 24, 24);
+                g2.dispose();
+            }
+        };
+        cardContainer.setOpaque(false);
+        cardContainer.setLayout(new BoxLayout(cardContainer, BoxLayout.Y_AXIS));
+        cardContainer.setBorder(new EmptyBorder(36, 50, 36, 50));
+
+        // Tieu de nho trong card
+        JLabel menuTitle = new JLabel("Menu chính");
+        menuTitle.setFont(new Font(FONT_FAMILY, Font.BOLD, 16));
+        menuTitle.setForeground(TEXT_SECONDARY);
+        menuTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cardContainer.add(menuTitle);
+        cardContainer.add(Box.createVerticalStrut(24));
 
         MenuButton startBtn = new MenuButton("Bắt đầu trò chơi", ACCENT_BLUE);
         startBtn.addActionListener(e -> {
             if (onStartGame != null) onStartGame.run();
         });
-        buttonContainer.add(startBtn);
-        buttonContainer.add(Box.createVerticalStrut(14));
+        cardContainer.add(startBtn);
+        cardContainer.add(Box.createVerticalStrut(16));
 
         MenuButton continueBtn = new MenuButton("Tiếp tục trò chơi", ACCENT_GREEN);
         continueBtn.addActionListener(e -> {
             if (onContinueGame != null) onContinueGame.run();
         });
-        buttonContainer.add(continueBtn);
-        buttonContainer.add(Box.createVerticalStrut(14));
+        cardContainer.add(continueBtn);
+        cardContainer.add(Box.createVerticalStrut(16));
 
         MenuButton shopBtn = new MenuButton("Cửa hàng", ACCENT_PURPLE);
         shopBtn.addActionListener(e -> {
             if (onOpenShop != null) onOpenShop.run();
         });
-        buttonContainer.add(shopBtn);
-        buttonContainer.add(Box.createVerticalStrut(14));
+        cardContainer.add(shopBtn);
+        cardContainer.add(Box.createVerticalStrut(16));
 
         MenuButton guideBtn = new MenuButton("Hướng dẫn chơi", ACCENT_AMBER);
         guideBtn.addActionListener(e -> showInstructions());
-        buttonContainer.add(guideBtn);
-        buttonContainer.add(Box.createVerticalStrut(14));
+        cardContainer.add(guideBtn);
+        cardContainer.add(Box.createVerticalStrut(16));
 
         MenuButton exitBtn = new MenuButton("Thoát", ACCENT_RED);
         exitBtn.addActionListener(e -> {
             if (onExitGame != null) onExitGame.run();
         });
-        buttonContainer.add(exitBtn);
+        cardContainer.add(exitBtn);
 
-        wrapper.add(buttonContainer);
+        wrapper.add(cardContainer);
         return wrapper;
     }
 
     private JPanel buildFooterPanel() {
         JPanel footer = new JPanel();
-        footer.setBackground(BG_COLOR);
-        footer.setBorder(new EmptyBorder(20, 0, 30, 0));
+        footer.setOpaque(false);
+        footer.setLayout(new BoxLayout(footer, BoxLayout.Y_AXIS));
+        footer.setBorder(new EmptyBorder(16, 0, 28, 0));
 
-        JLabel versionLabel = new JLabel("Java Swing MVC - v1.0");
-        versionLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        versionLabel.setForeground(new Color(0x546E7A));
+        JLabel projectLabel = new JLabel("Đồ án Java Swing - MVC");
+        projectLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 12));
+        projectLabel.setForeground(new Color(0x546E7A));
+        projectLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        footer.add(projectLabel);
+
+        footer.add(Box.createVerticalStrut(4));
+
+        JLabel versionLabel = new JLabel("Memory Card Game v1.0");
+        versionLabel.setFont(new Font(FONT_FAMILY, Font.PLAIN, 11));
+        versionLabel.setForeground(new Color(0x455A64));
+        versionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         footer.add(versionLabel);
 
         return footer;
@@ -176,8 +240,8 @@ public class MainMenuPanel extends JPanel {
 
     private void showInstructions() {
         String content =
-                "<html><body style='width:340px; font-family:SansSerif; color:#E0E0E0; "
-                        + "background-color:#1A1A2E; padding:10px;'>"
+                "<html><body style='width:360px; font-family:Segoe UI, SansSerif; color:#E0E0E0; "
+                        + "background-color:#1A1A2E; padding:12px;'>"
                         + "<h2 style='color:#2196F3; margin-bottom:8px;'>Hướng dẫn chơi</h2>"
                         + "<p><b>1.</b> Chọn cấp độ: Dễ, Trung bình, hoặc Khó.</p>"
                         + "<p><b>2.</b> Nhấn vào thẻ để lật mở. Mỗi lượt lật được 2 thẻ.</p>"
@@ -211,7 +275,7 @@ public class MainMenuPanel extends JPanel {
             this.hoverColor = brighter(accentColor, 0.2f);
             this.pressedColor = darker(accentColor, 0.15f);
 
-            setFont(new Font("SansSerif", Font.BOLD, 16));
+            setFont(new Font("Segoe UI", Font.BOLD, 17));
             setForeground(Color.WHITE);
             setBackground(baseColor);
             setFocusPainted(false);
@@ -220,9 +284,9 @@ public class MainMenuPanel extends JPanel {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setAlignmentX(Component.CENTER_ALIGNMENT);
-            setPreferredSize(new Dimension(280, 48));
-            setMaximumSize(new Dimension(280, 48));
-            setMinimumSize(new Dimension(280, 48));
+            setPreferredSize(new Dimension(320, 52));
+            setMaximumSize(new Dimension(320, 52));
+            setMinimumSize(new Dimension(320, 52));
 
             addMouseListener(new MouseAdapter() {
                 @Override
@@ -263,7 +327,7 @@ public class MainMenuPanel extends JPanel {
 
             int w = getWidth();
             int h = getHeight();
-            int arc = 12;
+            int arc = 14;
 
             Color bg;
             if (getModel().isPressed()) {

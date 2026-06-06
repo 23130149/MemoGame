@@ -23,12 +23,12 @@ public class GameBoardPanel extends JPanel {
     private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);  // Vang ban trong
     private static final Color HINT_BORDER = new Color(255, 215, 0, 200);  // Vang dam
 
-    private static final Font CARD_FONT = new Font("SansSerif", Font.BOLD, 22);
-    private static final Font CARD_FONT_VALUE = new Font("SansSerif", Font.BOLD, 20);
+    private static final Font CARD_FONT = new Font("Segoe UI", Font.BOLD, 24);
+    private static final Font CARD_FONT_VALUE = new Font("Segoe UI", Font.BOLD, 22);
 
     private static final int CARD_ARC = 14;
-    private static final int CARD_GAP = 8;
-    private static final int BOARD_PAD = 16;
+    private static final int CARD_GAP = 10;
+    private static final int BOARD_PAD = 20;
 
     private List<Card> cards;
     private final PlayerProfile playerProfile;
