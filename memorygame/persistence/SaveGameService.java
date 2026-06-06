@@ -48,6 +48,7 @@ public final class SaveGameService {
      */
     public static void deleteSave(Path savePath) throws IOException {
         Files.deleteIfExists(savePath);
+        Files.deleteIfExists(savePath.resolveSibling(savePath.getFileName() + BACKUP_SUFFIX));
     }
 
     public static void save(Path savePath, GameSession session, GameState state, List<Card> cards) throws IOException {
