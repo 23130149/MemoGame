@@ -12,15 +12,16 @@ public class GameController {
     private static final int MATCH_POINTS = 10;
     private static final int FLIP_DELAY_MS = 1000;
     private static final int HINT_DELAY_MS = 1500;
+    private static final int MISMATCH_PENALTY = 5;
 
     private final GameEngine engine;
     private final GameBoardPanel boardPanel;
-    private final CardFlipController cardFlipController;
+    private final memorygame.controller.CardFlipController cardFlipController;
 
     public GameController(GameEngine engine, GameBoardPanel boardPanel) {
         this.engine = engine;
         this.boardPanel = boardPanel;
-        this.cardFlipController = new CardFlipController();
+        this.cardFlipController = new memorygame.controller.CardFlipController();
 
         boardPanel.setOnCardClicked(this::handleCardClick);
         boardPanel.initializeBoard(engine.getCards());
@@ -115,6 +116,7 @@ public class GameController {
         boardPanel.showNoMatchEffect(first, second);
         cardFlipController.flipCardFaceDown(first);
         cardFlipController.flipCardFaceDown(second);
+        gameState.updateScore(-MISMATCH_PENALTY);
     }
 
     private void resetTurn() {
