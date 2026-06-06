@@ -197,8 +197,8 @@ public class MainMenuPanel extends JPanel {
         shopBtn.addActionListener(e -> {
             if (onOpenShop != null) onOpenShop.run();
         });
-        buttonContainer.add(shopBtn);
-        buttonContainer.add(Box.createVerticalStrut(14));
+        cardContainer.add(shopBtn);
+        cardContainer.add(Box.createVerticalStrut(16));
 
         MenuButton guideBtn = new MenuButton("Hướng dẫn chơi", ACCENT_AMBER);
         guideBtn.addActionListener(e -> showInstructions());
