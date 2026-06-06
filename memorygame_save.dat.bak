@@ -1,0 +1,201 @@
+{
+  "playerId": 1,
+  "levelId": 2,
+  "score": 450,
+  "movesCount": 3,
+  "remainingPairs": 15,
+  "boardLocked": false,
+  "cards": [
+    {
+      "id": 1,
+      "value": "C16",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 2,
+      "value": "C4",
+      "state": "MATCHED"
+    },
+    {
+      "id": 3,
+      "value": "C5",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 4,
+      "value": "C2",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 5,
+      "value": "C11",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 6,
+      "value": "C6",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 7,
+      "value": "C1",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 8,
+      "value": "C7",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 9,
+      "value": "C15",
+      "state": "MATCHED"
+    },
+    {
+      "id": 10,
+      "value": "C4",
+      "state": "MATCHED"
+    },
+    {
+      "id": 11,
+      "value": "C15",
+      "state": "MATCHED"
+    },
+    {
+      "id": 12,
+      "value": "C3",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 13,
+      "value": "C9",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 14,
+      "value": "C12",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 15,
+      "value": "C17",
+      "state": "MATCHED"
+    },
+    {
+      "id": 16,
+      "value": "C8",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 17,
+      "value": "C17",
+      "state": "MATCHED"
+    },
+    {
+      "id": 18,
+      "value": "C11",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 19,
+      "value": "C18",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 20,
+      "value": "C9",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 21,
+      "value": "C13",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 22,
+      "value": "C1",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 23,
+      "value": "C5",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 24,
+      "value": "C14",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 25,
+      "value": "C7",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 26,
+      "value": "C14",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 27,
+      "value": "C18",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 28,
+      "value": "C8",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 29,
+      "value": "C13",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 30,
+      "value": "C10",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 31,
+      "value": "C2",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 32,
+      "value": "C3",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 33,
+      "value": "C6",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 34,
+      "value": "C12",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 35,
+      "value": "C10",
+      "state": "FACE_DOWN"
+    },
+    {
+      "id": 36,
+      "value": "C16",
+      "state": "FACE_DOWN"
+    }
+  ],
+  "hintCount": 0,
+  "timeLeftSec": 77,
+  "playerGold": 0,
+  "selectedBackSkinId": "default_back",
+  "selectedFaceThemeId": "default_face",
+  "ownedBackSkinIds": [
+    "default_back"
+  ],
+  "ownedFaceThemeIds": [
+    "default_face"
+  ]
+}

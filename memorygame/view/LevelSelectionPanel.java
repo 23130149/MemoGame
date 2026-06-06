@@ -35,9 +35,6 @@ public class LevelSelectionPanel extends JPanel
     private final JButton cancelBtn   = new JButton("Trở về");
     private final JLabel  errorLabel  = new JLabel(" ");
     private final JLabel  goldLabel   = new JLabel();
-    private final JButton confirmBtn = new JButton("Xác nhận");
-    private final JButton cancelBtn = new JButton("Trở về");
-    private final JLabel errorLabel = new JLabel(" ");
 
     private LevelCard[] levelCards;
     private DifficultyLevel selectedLevel = null;
@@ -49,8 +46,6 @@ public class LevelSelectionPanel extends JPanel
     public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart, long initialGold) {
         this.onGameStart  = onGameStart;
         this.controller   = new LevelSelectionController(playerId, this);
-        this.onGameStart = onGameStart;
-        this.controller = new LevelSelectionController(playerId, this);
 
         setBackground(BG_COLOR);
         setLayout(new BorderLayout(0, 24));
