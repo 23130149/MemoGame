@@ -15,11 +15,13 @@ public class GameBoardPanel extends JPanel {
     private static final Color BG_COLOR = new Color(0x1A1A2E);
     private static final Color CARD_BACK = new Color(0x0F3460);
     private static final Color CARD_BACK_HOVER = new Color(0x154785);
-    private static final Color CARD_MATCHED = new Color(0x2E7D32);
+    private static final Color CARD_MATCHED = new Color(0x1B5E20);
     private static final Color CARD_FACE_UP = new Color(0x1976D2);
     private static final Color BORDER_COLOR = new Color(0x16213E);
-    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);  // Vang ban trong
-    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);  // Vang dam
+    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);
+    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);
+    private boolean flashGreen = false;  // ← đổi tên
+    private boolean flashRed = false;
 
     private static final Font CARD_FONT = new Font("SansSerif", Font.BOLD, 22);
     private static final Font CARD_FONT_VALUE = new Font("SansSerif", Font.BOLD, 20);
@@ -194,9 +196,9 @@ public class GameBoardPanel extends JPanel {
             CardState state = card.getState();
 
             if (state == CardState.MATCHED) {
-                setText("OK");
-                setFont(CARD_FONT);
-                setForeground(new Color(0xC8E6C9));
+                setText(card.getValue());
+                setFont(CARD_FONT_VALUE);
+                setForeground(Color.WHITE);
                 setEnabled(false);
             } else if (state == CardState.FACE_UP) {
                 setText(card.getValue());
@@ -212,11 +214,11 @@ public class GameBoardPanel extends JPanel {
         }
 
         void showMatchEffect() {
-            flashWhite = true;
+            flashGreen = true;
             repaint();
 
             new Timer(MATCH_FLASH_DURATION, e -> {
-                flashWhite = false;
+                flashGreen = false;
                 updateAppearance();
                 repaint();
                 ((Timer) e.getSource()).stop();
@@ -224,10 +226,10 @@ public class GameBoardPanel extends JPanel {
         }
 
         void showNoMatchEffect() {
-            setBackground(new Color(0xEF5350));
-            setBorder(BorderFactory.createLineBorder(new Color(0xFF1744), 3));
+            flashRed = true;
             repaint();
             new Timer(MATCH_FLASH_DURATION, e -> {
+                flashRed = false;
                 updateAppearance();
                 repaint();
                 ((Timer) e.getSource()).stop();
@@ -257,8 +259,10 @@ public class GameBoardPanel extends JPanel {
             CardState state = card.getState();
 
             Color bgColor;
-            if (flashWhite) {
-                bgColor = new Color(0xE8F5E9);
+            if (flashGreen) {
+                bgColor = new Color(0x1B5E20);
+            } else if (flashRed) {
+                bgColor = new Color(0xEF5350);
             } else if (state == CardState.MATCHED) {
                 bgColor = CARD_MATCHED;
             } else if (state == CardState.FACE_UP) {
@@ -269,14 +273,16 @@ public class GameBoardPanel extends JPanel {
             g2.setColor(bgColor);
             g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
 
-            if (state == CardState.MATCHED) {
-                g2.setColor(new Color(0x4CAF50));
+            if (flashRed) {
+                g2.setColor(new Color(0xFF1744));
+            } else if (state == CardState.MATCHED) {
+                g2.setColor(new Color(0x00E676));
             } else if (state == CardState.FACE_UP) {
                 g2.setColor(new Color(0x42A5F5));
             } else {
                 g2.setColor(BORDER_COLOR);
             }
-            g2.setStroke(new BasicStroke(2f));
+            g2.setStroke(new BasicStroke(state == CardState.MATCHED ? 3f : 2f));
             g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
 
             if (state == CardState.FACE_DOWN && !flashWhite) {
@@ -285,8 +291,10 @@ public class GameBoardPanel extends JPanel {
             }
 
             g2.setFont(getFont());
-            if (flashWhite) {
-                g2.setColor(CARD_MATCHED);
+            if (flashGreen) {
+                g2.setColor(Color.WHITE);
+            } else if (flashRed) {
+                g2.setColor(Color.WHITE);
             } else {
                 g2.setColor(getForeground());
             }
