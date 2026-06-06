@@ -4,11 +4,17 @@ import memorygame.model.Card;
 import memorygame.model.CardState;
 import memorygame.model.GameEngine;
 import memorygame.model.GameState;
+import memorygame.model.PlayerProfile;
+import memorygame.model.RewardCalculator;
 import memorygame.view.GameBoardPanel;
 
 import javax.swing.Timer;
 
 public class GameController {
+    public interface GameCompletionHandler {
+        void onGameCompleted(int score, int moves, long rewardGold, long totalGold);
+    }
+
     private static final int MATCH_POINTS = 10;
     private static final int FLIP_DELAY_MS = 1000;
     private static final int HINT_DELAY_MS = 1500;
@@ -16,11 +22,24 @@ public class GameController {
     private final GameEngine engine;
     private final GameBoardPanel boardPanel;
     private final CardFlipController cardFlipController;
+    private final PlayerProfile playerProfile;
+    private final GameCompletionHandler gameCompletionHandler;
 
     public GameController(GameEngine engine, GameBoardPanel boardPanel) {
+        this(engine, boardPanel, null, null);
+    }
+
+    public GameController(GameEngine engine, GameBoardPanel boardPanel, PlayerProfile playerProfile) {
+        this(engine, boardPanel, playerProfile, null);
+    }
+
+    public GameController(GameEngine engine, GameBoardPanel boardPanel,
+            PlayerProfile playerProfile, GameCompletionHandler gameCompletionHandler) {
         this.engine = engine;
         this.boardPanel = boardPanel;
         this.cardFlipController = new CardFlipController();
+        this.playerProfile = playerProfile;
+        this.gameCompletionHandler = gameCompletionHandler;
 
         boardPanel.setOnCardClicked(this::handleCardClick);
         boardPanel.initializeBoard(engine.getCards());
@@ -103,7 +122,25 @@ public class GameController {
         boardPanel.showMatchEffect(first, second);
 
         if (gameState.getRemainingPairs() == 0) {
-            boardPanel.showGameOver(gameState.getScore(), gameState.getMovesCount());
+            long rewardGold = RewardCalculator.calculateGoldFromScore(gameState.getScore());
+            long totalGold = rewardGold;
+            if (playerProfile != null) {
+                playerProfile.creditGold(rewardGold);
+                totalGold = playerProfile.getGold();
+            }
+
+            if (gameCompletionHandler != null) {
+                gameCompletionHandler.onGameCompleted(
+                        gameState.getScore(),
+                        gameState.getMovesCount(),
+                        rewardGold,
+                        totalGold
+                );
+            } else {
+                boardPanel.showGameOver(gameState.getScore(), gameState.getMovesCount());
+                boardPanel.showNotify("Ban nhan duoc " + rewardGold + " vang (diem/10)."
+                        + (playerProfile != null ? " Tong vang: " + playerProfile.getGold() : ""));
+            }
         }
     }
 

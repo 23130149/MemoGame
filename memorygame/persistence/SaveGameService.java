@@ -2,10 +2,12 @@ package memorygame.persistence;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import memorygame.model.Card;
 import memorygame.model.DifficultyLevel;
 import memorygame.model.GameSession;
 import memorygame.model.GameState;
+import memorygame.model.PlayerProfile;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -47,9 +49,15 @@ public final class SaveGameService {
      */
     public static void deleteSave(Path savePath) throws IOException {
         Files.deleteIfExists(savePath);
+        Files.deleteIfExists(savePath.resolveSibling(savePath.getFileName() + BACKUP_SUFFIX));
     }
 
     public static void save(Path savePath, GameSession session, GameState state, List<Card> cards) throws IOException {
+        save(savePath, session, state, cards, null);
+    }
+
+    public static void save(Path savePath, GameSession session, GameState state, List<Card> cards,
+            PlayerProfile playerProfile) throws IOException {
         if (session == null || state == null || cards == null || cards.isEmpty()) {
             throw new IllegalArgumentException("Dữ liệu game để lưu không hợp lệ.");
         }
@@ -67,8 +75,45 @@ public final class SaveGameService {
         Integer firstId = state.getFirstCard() == null ? null : state.getFirstCard().getId();
         Integer secondId = state.getSecondCard() == null ? null : state.getSecondCard().getId();
 
+        long playerGold = 0;
+        String selectedBackSkinId = "default_back";
+        String selectedFaceThemeId = "default_face";
+        Set<String> ownedBackSkinIds = new HashSet<>(Collections.singleton("default_back"));
+        Set<String> ownedFaceThemeIds = new HashSet<>(Collections.singleton("default_face"));
+
+        if (playerProfile != null) {
+            playerGold = playerProfile.getGold();
+            selectedBackSkinId = playerProfile.getSelectedBackSkinId();
+            selectedFaceThemeId = playerProfile.getSelectedFaceThemeId();
+            ownedBackSkinIds = new HashSet<>(playerProfile.getOwnedBackSkinIds());
+            ownedFaceThemeIds = new HashSet<>(playerProfile.getOwnedFaceThemeIds());
+        }
+
         // Tạo GameSaveData với tất cả thông tin game
-        GameSaveData saveData = new GameSaveData(session.getPlayerId(), session.getLevel().getLevelId(), state.getScore(), state.getMovesCount(), state.getRemainingPairs(), state.isLocked(), firstId, secondId, cardData, state.getHintCount(), state.getTimeLeftSec());
+        GameSaveData saveData = new GameSaveData(
+                session.getPlayerId(),
+                session.getLevel().getLevelId(),
+                state.getScore(),
+                state.getMovesCount(),
+                state.getRemainingPairs(),
+                state.isLocked(),
+                firstId,
+                secondId,
+                cardData,
+                state.getHintCount(),
+                state.getTimeLeftSec(),
+                playerGold,
+                selectedBackSkinId,
+                selectedFaceThemeId,
+                ownedBackSkinIds,
+                ownedFaceThemeIds
+        );
+
+        // Tạo thư mục nếu chưa có
+        Path parent = savePath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
 
         // Backup file cũ trước khi ghi đè
         backupIfExists(savePath);
@@ -117,12 +162,23 @@ public final class SaveGameService {
             throw new FileNotFoundException("Không tìm thấy file save: " + savePath);
         }
 
-        // Deserialize từ file
-        GameSaveData data;
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(savePath.toFile()))) {
-            data = (GameSaveData) in.readObject();
+        String json;
+        try {
+            json = Files.readString(savePath, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IOException("Không thể đọc file save", e);
         }
 
+        GameSaveData data;
+        try {
+            data = GSON.fromJson(json, GameSaveData.class);
+        } catch (JsonSyntaxException e) {
+            throw new IOException("File save bị hỏng hoặc sai định dạng", e);
+        }
+
+        if (data == null) {
+            throw new IOException("File save rỗng hoặc không hợp lệ");
+        }
         // Kiểm tra level ID hợp lệ
         DifficultyLevel.Level[] levels = DifficultyLevel.Level.values();
         int idx = data.getLevelId() - 1;
@@ -162,6 +218,15 @@ public final class SaveGameService {
         // Restore toàn bộ trạng thái
         state.restoreState(data.getScore(), data.getMovesCount(), data.getRemainingPairs(), data.isBoardLocked(), first, second);
 
-        return new LoadedGame(session, state, cards);
+        PlayerProfile playerProfile = new PlayerProfile();
+        playerProfile.restoreFromSave(
+                data.getPlayerGold(),
+                data.getSelectedBackSkinId(),
+                data.getSelectedFaceThemeId(),
+                data.getOwnedBackSkinIds(),
+                data.getOwnedFaceThemeIds()
+        );
+
+        return new LoadedGame(session, state, cards, playerProfile);
     }
 }

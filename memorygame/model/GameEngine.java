@@ -14,6 +14,7 @@ public class GameEngine {
     private GameSession session;
     private GameState gameState;
     private List<Card> cards = new ArrayList<>();
+    private PlayerProfile playerProfile;
 
     public boolean initBoard(GameSession session) {
         if (session == null || session.getStatus() != GameSession.Status.CONFIRMED) {
@@ -63,9 +64,14 @@ public class GameEngine {
     }
 
     public void restore(GameSession session, GameState gameState, List<Card> cards) {
+        restore(session, gameState, cards, null);
+    }
+
+    public void restore(GameSession session, GameState gameState, List<Card> cards, PlayerProfile playerProfile) {
         this.session = session;
         this.gameState = gameState;
         this.cards = (cards != null) ? cards : new ArrayList<>();
+        this.playerProfile = playerProfile;
 
         if (this.gameState != null) {
             this.gameState.setCards(this.cards);
@@ -73,12 +79,16 @@ public class GameEngine {
     }
 
     public void saveProgress(Path savePath) throws IOException {
-        SaveGameService.save(savePath, session, gameState, cards);
+        saveProgress(savePath, playerProfile);
+    }
+
+    public void saveProgress(Path savePath, PlayerProfile playerProfile) throws IOException {
+        SaveGameService.save(savePath, session, gameState, cards, playerProfile);
     }
 
     public void loadProgress(Path savePath) throws IOException, ClassNotFoundException {
         LoadedGame loaded = SaveGameService.load(savePath);
-        restore(loaded.getSession(), loaded.getGameState(), loaded.getCards());
+        restore(loaded.getSession(), loaded.getGameState(), loaded.getCards(), loaded.getPlayerProfile());
     }
 
     // ===== GETTERS =====
@@ -92,5 +102,9 @@ public class GameEngine {
 
     public List<Card> getCards() {
         return cards;
+    }
+
+    public PlayerProfile getPlayerProfile() {
+        return playerProfile;
     }
 }
