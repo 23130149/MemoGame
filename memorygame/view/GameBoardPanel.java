@@ -14,16 +14,26 @@ public class GameBoardPanel extends JPanel {
 
     private static final Color BG_COLOR = new Color(0x1A1A2E);
     private static final Color CARD_BACK = new Color(0x0F3460);
-    private static final Color CARD_MATCHED = new Color(0x4CAF50);
-    private static final Color CARD_FACE_UP = new Color(0x2196F3);
+    private static final Color CARD_BACK_HOVER = new Color(0x154785);
+    private static final Color CARD_MATCHED = new Color(0x2E7D32);
+    private static final Color CARD_FACE_UP = new Color(0x1976D2);
     private static final Color BORDER_COLOR = new Color(0x16213E);
-    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);  // Vàng bán trong
-    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);    // Vàng đậm
+    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);  // Vang ban trong
+    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);  // Vang dam
+
+    private static final Font CARD_FONT = new Font("SansSerif", Font.BOLD, 22);
+    private static final Font CARD_FONT_VALUE = new Font("SansSerif", Font.BOLD, 20);
+
+    private static final int CARD_ARC = 14;
+    private static final int CARD_GAP = 8;
+    private static final int BOARD_PAD = 16;
 
     private List<Card> cards;
     private int gridRows;
     private int gridCols;
     private Consumer<Card> onCardClicked;
+    private Consumer<Integer> onHintCountChanged;
+    private Runnable onHintAnimationDone;
     private boolean boardLocked = false;
 
     private CardButton[] cardButtons;
@@ -33,8 +43,8 @@ public class GameBoardPanel extends JPanel {
         this.gridCols = gridCols;
 
         setBackground(BG_COLOR);
-        setLayout(new GridLayout(gridRows, gridCols, 10, 10));
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new GridLayout(gridRows, gridCols, CARD_GAP, CARD_GAP));
+        setBorder(BorderFactory.createEmptyBorder(BOARD_PAD, BOARD_PAD, BOARD_PAD, BOARD_PAD));
     }
 
     public void initializeBoard(List<Card> cards) {
@@ -112,8 +122,23 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void updateHintDisplay(int remainingHints) {
-        // Cập nhật từ controller
-        System.out.println("Remaining hints: " + remainingHints);
+        if (onHintCountChanged != null) {
+            onHintCountChanged.accept(remainingHints);
+        }
+    }
+
+    public void setOnHintCountChanged(Consumer<Integer> callback) {
+        this.onHintCountChanged = callback;
+    }
+
+    public void setOnHintAnimationDone(Runnable callback) {
+        this.onHintAnimationDone = callback;
+    }
+
+    public void notifyHintAnimationDone() {
+        if (onHintAnimationDone != null) {
+            onHintAnimationDone.run();
+        }
     }
 
     public void showNotify(String message) {
@@ -128,17 +153,36 @@ public class GameBoardPanel extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ===== INNER CLASS: CardButton =====
     private class CardButton extends JButton {
+        private static final int MATCH_FLASH_DURATION = 500;
         private final Card card;
         private boolean hintHighlighted = false;
-        private static final int MATCH_FLASH_DURATION = 500;
+        private boolean hovering = false;
+        private boolean flashWhite = false;
 
         CardButton(Card card) {
             this.card = card;
             setFocusPainted(false);
-            setFont(new Font("SansSerif", Font.BOLD, 20));
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setFont(CARD_FONT);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hovering = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hovering = false;
+                    repaint();
+                }
+            });
+
             updateAppearance();
         }
 
@@ -150,28 +194,30 @@ public class GameBoardPanel extends JPanel {
             CardState state = card.getState();
 
             if (state == CardState.MATCHED) {
-                setText("✓");
-                setBackground(CARD_MATCHED);
-                setForeground(Color.WHITE);
+                setText("OK");
+                setFont(CARD_FONT);
+                setForeground(new Color(0xC8E6C9));
                 setEnabled(false);
             } else if (state == CardState.FACE_UP) {
                 setText(card.getValue());
-                setBackground(CARD_FACE_UP);
+                setFont(CARD_FONT_VALUE);
                 setForeground(Color.WHITE);
                 setEnabled(true);
-            } else { // FACE_DOWN
+            } else {
                 setText("?");
-                setBackground(CARD_BACK);
-                setForeground(new Color(0xB0BEC5));
+                setFont(CARD_FONT);
+                setForeground(new Color(0x64B5F6));
                 setEnabled(true);
             }
-
-            setBorder(BorderFactory.createLineBorder(BORDER_COLOR, 2));
         }
 
         void showMatchEffect() {
+            flashWhite = true;
+            repaint();
             new Timer(MATCH_FLASH_DURATION, e -> {
+                flashWhite = false;
                 updateAppearance();
+                repaint();
                 ((Timer) e.getSource()).stop();
             }).start();
         }
@@ -179,6 +225,7 @@ public class GameBoardPanel extends JPanel {
         void showNoMatchEffect() {
             new Timer(MATCH_FLASH_DURATION, e -> {
                 updateAppearance();
+                repaint();
                 ((Timer) e.getSource()).stop();
             }).start();
         }
@@ -195,22 +242,67 @@ public class GameBoardPanel extends JPanel {
 
         @Override
         protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            // Vẽ hiệu ứng highlight khi gợi ý
+            int w = getWidth();
+            int h = getHeight();
+            CardState state = card.getState();
+
+            Color bgColor;
+            if (flashWhite) {
+                bgColor = new Color(0xE8F5E9);
+            } else if (state == CardState.MATCHED) {
+                bgColor = CARD_MATCHED;
+            } else if (state == CardState.FACE_UP) {
+                bgColor = CARD_FACE_UP;
+            } else {
+                bgColor = (hovering && !boardLocked) ? CARD_BACK_HOVER : CARD_BACK;
+            }
+            g2.setColor(bgColor);
+            g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
+
+            if (state == CardState.MATCHED) {
+                g2.setColor(new Color(0x4CAF50));
+            } else if (state == CardState.FACE_UP) {
+                g2.setColor(new Color(0x42A5F5));
+            } else {
+                g2.setColor(BORDER_COLOR);
+            }
+            g2.setStroke(new BasicStroke(2f));
+            g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
+
+            if (state == CardState.FACE_DOWN && !flashWhite) {
+                g2.setColor(new Color(255, 255, 255, 12));
+                g2.fillRoundRect(2, 2, w - 4, h / 3, CARD_ARC, CARD_ARC);
+            }
+
+            g2.setFont(getFont());
+            if (flashWhite) {
+                g2.setColor(CARD_MATCHED);
+            } else {
+                g2.setColor(getForeground());
+            }
+            FontMetrics fm = g2.getFontMetrics();
+            String text = getText();
+            if (text != null && !text.isEmpty()) {
+                int textX = (w - fm.stringWidth(text)) / 2;
+                int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(text, textX, textY);
+            }
+
             if (hintHighlighted) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Vùng phủ vàng bán trong
                 g2.setColor(HINT_HIGHLIGHT);
-                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
 
-                // Viền vàng đậm
                 g2.setColor(HINT_BORDER);
                 g2.setStroke(new BasicStroke(3));
-                g2.drawRect(1, 1, getWidth() - 2, getHeight() - 2);
+                g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
             }
+            g2.dispose();
         }
     }
 }
