@@ -210,10 +210,8 @@ public class GameBoardPanel extends JPanel {
 
     private Image getCardBackImage() {
         String themeId = getSelectedThemeId();
-        // If the selected theme is the default (i.e., player hasn't bought a custom theme),
-        // use a question-mark back image to indicate locked skin.
+
         if (playerProfile == null || ShopCatalog.DEFAULT_THEME_ID.equals(themeId)) {
-            // Try to load a question-mark image resource if provided, else generate one.
             Image img = loadImage("/memorygame/themes/back_question.png");
             if (img != null) {
                 return img;
@@ -226,20 +224,30 @@ public class GameBoardPanel extends JPanel {
 
     private Image createQuestionMarkImage(int width, int height) {
         try {
-            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                    width,
+                    height,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB
+            );
+
             Graphics2D g = img.createGraphics();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
             g.setColor(new Color(0x0F3460));
             g.fillRect(0, 0, width, height);
+
             g.setColor(Color.WHITE);
             Font f = new Font("SansSerif", Font.BOLD, Math.max(12, width / 2));
             g.setFont(f);
+
             String q = "?";
             FontMetrics fm = g.getFontMetrics();
             int tx = (width - fm.stringWidth(q)) / 2;
             int ty = (height - fm.getHeight()) / 2 + fm.getAscent();
+
             g.drawString(q, tx, ty);
             g.dispose();
+
             return img;
         } catch (Exception ex) {
             return null;
@@ -252,6 +260,7 @@ public class GameBoardPanel extends JPanel {
         }
 
         String themeId = getSelectedThemeId();
+
         Image image = loadImage(
                 ShopCatalog.getFaceImagePath(
                         themeId,
@@ -263,7 +272,6 @@ public class GameBoardPanel extends JPanel {
             return image;
         }
 
-        // Khi dùng skin mặc định hoặc ảnh theme bị thiếu, vẽ trực tiếp C1-C32 lên thẻ.
         return createFaceValueImage(card.getValue());
     }
 
@@ -524,7 +532,6 @@ public class GameBoardPanel extends JPanel {
             }
 
             if (image != null) {
-
                 int padding = 8;
 
                 int availableW = w - padding * 2;
@@ -534,7 +541,6 @@ public class GameBoardPanel extends JPanel {
                 int imgH = image.getHeight(this);
 
                 if (imgW > 0 && imgH > 0) {
-
                     double scale = Math.min(
                             (double) availableW / imgW,
                             (double) availableH / imgH

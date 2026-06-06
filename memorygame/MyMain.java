@@ -30,7 +30,7 @@ public class MyMain {
     }
 
     public static void showMainMenu() {
-        JFrame frame = createAppFrame(APP_TITLE, 760, 520);
+        JFrame frame = createAppFrame(APP_TITLE, 1100, 750);
 
         MainMenuPanel menuPanel = new MainMenuPanel();
 
@@ -62,7 +62,7 @@ public class MyMain {
     }
 
     public static void showLevelSelection() {
-        JFrame frame = createAppFrame(APP_TITLE + " - Chọn Cấp Độ", 760, 520);
+        JFrame frame = createAppFrame(APP_TITLE + " - Chọn Cấp Độ", 1100, 750);
 
         int playerId = 1;
 
@@ -128,7 +128,7 @@ public class MyMain {
         JFrame frame = new JFrame(title);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(width, height);
-        frame.setMinimumSize(new Dimension(600, 420));
+        frame.setMinimumSize(new Dimension(1000, 700));
         frame.setLocationRelativeTo(null);
         return frame;
     }
@@ -141,7 +141,7 @@ public class MyMain {
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(140, 40));
+        btn.setPreferredSize(new Dimension(160, 44));
         return btn;
     }
 }
