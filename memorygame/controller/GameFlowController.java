@@ -1,6 +1,8 @@
 package memorygame.controller;
 
 import memorygame.model.GameEngine;
+import memorygame.model.PlayerProfile;
+import memorygame.model.RewardCalculator;
 import memorygame.persistence.SaveGameService;
 import memorygame.view.GameBoardPanel;
 
@@ -18,6 +20,15 @@ public final class GameFlowController {
     }
 
     public static void continueGame(JFrame parentFrame, Path saveFile, Consumer<GameEngine> onLoaded) {
+        continueGame(parentFrame, saveFile, null, onLoaded);
+    }
+
+    public static void continueGame(
+            JFrame parentFrame,
+            Path saveFile,
+            PlayerProfile runtimeProfile,
+            Consumer<GameEngine> onLoaded
+    ) {
         if (!SaveGameService.hasSave(saveFile)) {
             JOptionPane.showMessageDialog(
                     parentFrame,
@@ -31,6 +42,11 @@ public final class GameFlowController {
         GameEngine engine = new GameEngine();
         try {
             engine.loadProgress(saveFile);
+
+            if (runtimeProfile != null && engine.getPlayerProfile() != null) {
+                runtimeProfile.copyFrom(engine.getPlayerProfile());
+            }
+
             if (onLoaded != null) {
                 onLoaded.accept(engine);
             }
@@ -45,6 +61,19 @@ public final class GameFlowController {
     }
 
     public static void openGameWindow(GameEngine engine, Path saveFile) {
+        openGameWindow(engine, saveFile, null, null);
+    }
+
+    public static void openGameWindow(GameEngine engine, Path saveFile, PlayerProfile playerProfile) {
+        openGameWindow(engine, saveFile, playerProfile, null);
+    }
+
+    public static void openGameWindow(
+            GameEngine engine,
+            Path saveFile,
+            PlayerProfile playerProfile,
+            Runnable onBackToMenu
+    ) {
         JFrame gameFrame = new JFrame("Memory Game - " + engine.getSession().getLevel().getLevelName());
         gameFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         gameFrame.setSize(900, 700);
@@ -69,20 +98,30 @@ public final class GameFlowController {
         updateTimeLabel(timeLabel, engine);
         topPanel.add(timeLabel, BorderLayout.CENTER);
 
-        // Label gợi ý
+        // Góc phải: vàng + gợi ý
+        JPanel rightInfoPanel = new JPanel();
+        rightInfoPanel.setOpaque(false);
+        rightInfoPanel.setLayout(new BoxLayout(rightInfoPanel, BoxLayout.Y_AXIS));
+
+        JLabel goldLabel = new JLabel();
+        goldLabel.setForeground(new Color(0xFFD54F));
+        goldLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        updateGoldLabel(goldLabel, playerProfile);
+
         JLabel hintLabel = new JLabel();
         hintLabel.setForeground(Color.WHITE);
         hintLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
         updateHintLabel(hintLabel, engine);
-        topPanel.add(hintLabel, BorderLayout.EAST);
+
+        rightInfoPanel.add(goldLabel);
+        rightInfoPanel.add(Box.createVerticalStrut(4));
+        rightInfoPanel.add(hintLabel);
+        topPanel.add(rightInfoPanel, BorderLayout.EAST);
 
         // ===== BOARD PANEL =====
         int rows = engine.getSession().getLevel().getGridRows();
         int cols = engine.getSession().getLevel().getGridCols();
         GameBoardPanel boardPanel = new GameBoardPanel(rows, cols);
-
-        // ===== GAME CONTROLLER =====
-        GameController gameController = new GameController(engine, boardPanel);
 
         // ===== BOTTOM PANEL: NÚT ĐIỀU KHIỂN =====
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
@@ -138,12 +177,67 @@ public final class GameFlowController {
         saveExitBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
         saveExitBtn.setPreferredSize(new Dimension(130, 40));
 
+        // ===== COUNTDOWN TIMER =====
+        Timer[] countdownTimer = new Timer[1]; // Mảng để có thể thay đổi reference
+
+        // ===== GAME CONTROLLER =====
+        GameController gameController = new GameController(
+                engine,
+                boardPanel,
+                playerProfile,
+                (score, moves, rewardGold, totalGold) -> {
+                    if (countdownTimer[0] != null) {
+                        countdownTimer[0].stop();
+                    }
+                    boardPanel.setBoardLocked(true);
+                    updateGoldLabel(goldLabel, playerProfile);
+
+                    String message = "Chúc mừng! Bạn đã hoàn thành!\n"
+                            + "Điểm: " + score + " | Số lượt: " + moves + "\n"
+                            + "Bạn nhận được: " + rewardGold + " vàng (điểm/10).\n"
+                            + "Tổng vàng: " + totalGold;
+
+                    if (onBackToMenu != null) {
+                        Object[] options = {"Quay lại Menu", "Đóng"};
+                        int choice = JOptionPane.showOptionDialog(
+                                gameFrame,
+                                message,
+                                "Kết thúc trò chơi",
+                                JOptionPane.DEFAULT_OPTION,
+                                JOptionPane.INFORMATION_MESSAGE,
+                                null,
+                                options,
+                                options[0]
+                        );
+
+                        if (choice == 0) {
+                            gameFrame.dispose();
+                            onBackToMenu.run();
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                gameFrame,
+                                message,
+                                "Kết thúc trò chơi",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    }
+                }
+        );
+
+        // Nút Gợi ý
+        JButton hintBtn = new JButton("💡 Gợi ý (" + engine.getGameState().getHintCount() + ")");
+        hintBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        hintBtn.setPreferredSize(new Dimension(130, 40));
+        hintBtn.addActionListener(e -> {
+            gameController.onHintClick();
+            updateHintLabel(hintLabel, engine);
+            hintBtn.setText("💡 Gợi ý (" + engine.getGameState().getHintCount() + ")");
+        });
+
         bottomPanel.add(hintBtn);
         bottomPanel.add(resetBtn);
         bottomPanel.add(saveExitBtn);
-
-        // ===== COUNTDOWN TIMER =====
-        Timer[] countdownTimer = new Timer[1]; // Mảng để có thể thay đổi reference
 
         countdownTimer[0] = new Timer(1000, e -> {
             engine.getGameState().decrementTimeLeft();
@@ -154,12 +248,7 @@ public final class GameFlowController {
             if (engine.getGameState().isTimeUp()) {
                 countdownTimer[0].stop();
                 boardPanel.setBoardLocked(true);
-
-                JOptionPane.showMessageDialog(gameFrame,
-                        "⏰ Hết giờ! Bạn thua.\nĐiểm: " + engine.getGameState().getScore() +
-                                " | Lượt: " + engine.getGameState().getMovesCount(),
-                        "Game Over",
-                        JOptionPane.INFORMATION_MESSAGE);
+                showTimeUpDialog(gameFrame, engine, playerProfile, goldLabel, onBackToMenu);
             }
         });
         countdownTimer[0].setRepeats(true);
@@ -199,12 +288,7 @@ public final class GameFlowController {
                 if (engine.getGameState().isTimeUp()) {
                     ((Timer) evt.getSource()).stop();
                     boardPanel.setBoardLocked(true);
-
-                    JOptionPane.showMessageDialog(gameFrame,
-                            "⏰ Hết giờ! Bạn thua.\nĐiểm: " + engine.getGameState().getScore() +
-                                    " | Lượt: " + engine.getGameState().getMovesCount(),
-                            "Game Over",
-                            JOptionPane.INFORMATION_MESSAGE);
+                    showTimeUpDialog(gameFrame, engine, playerProfile, goldLabel, onBackToMenu);
                 }
             });
             countdownTimer[0].setRepeats(true);
@@ -218,7 +302,7 @@ public final class GameFlowController {
             }
 
             try {
-                engine.saveProgress(saveFile);
+                engine.saveProgress(saveFile, playerProfile);
                 JOptionPane.showMessageDialog(gameFrame, "Đã lưu tiến trình.");
                 gameFrame.dispose();
             } catch (IOException ex) {
@@ -268,5 +352,61 @@ public final class GameFlowController {
 
     private static void updateHintLabel(JLabel label, GameEngine engine) {
         label.setText("Gợi ý còn lại: " + engine.getGameState().getHintCount());
+    }
+
+    private static void updateGoldLabel(JLabel label, PlayerProfile profile) {
+        long gold = (profile == null) ? 0 : profile.getGold();
+        label.setText("Vàng: " + gold);
+    }
+
+    private static void showTimeUpDialog(
+            JFrame gameFrame,
+            GameEngine engine,
+            PlayerProfile playerProfile,
+            JLabel goldLabel,
+            Runnable onBackToMenu
+    ) {
+        int score = engine.getGameState().getScore();
+        int moves = engine.getGameState().getMovesCount();
+        long rewardGold = RewardCalculator.calculateGoldFromScore(score);
+        long totalGold = rewardGold;
+
+        if (playerProfile != null) {
+            playerProfile.creditGold(rewardGold);
+            totalGold = playerProfile.getGold();
+            updateGoldLabel(goldLabel, playerProfile);
+        }
+
+        String message = "⏰ Hết giờ! Bạn thua.\n"
+                + "Điểm: " + score + " | Lượt: " + moves + "\n"
+                + "Bạn nhận được: " + rewardGold + " vàng (điểm/10).\n"
+                + "Tổng vàng: " + totalGold;
+
+        if (onBackToMenu != null) {
+            Object[] options = {"Quay lại Menu", "Đóng"};
+            int choice = JOptionPane.showOptionDialog(
+                    gameFrame,
+                    message,
+                    "Game Over",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
+
+            if (choice == 0) {
+                gameFrame.dispose();
+                onBackToMenu.run();
+            }
+            return;
+        }
+
+        JOptionPane.showMessageDialog(
+                gameFrame,
+                message,
+                "Game Over",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 }

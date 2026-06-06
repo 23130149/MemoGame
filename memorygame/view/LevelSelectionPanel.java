@@ -31,6 +31,10 @@ public class LevelSelectionPanel extends JPanel
     private final Consumer<GameSession> onGameStart;
 
     private final JPanel levelCardsPanel = new JPanel(new GridLayout(1, 3, 20, 0));
+    private final JButton confirmBtn  = new JButton("Xác nhận");
+    private final JButton cancelBtn   = new JButton("Trở về");
+    private final JLabel  errorLabel  = new JLabel(" ");
+    private final JLabel  goldLabel   = new JLabel();
     private final JButton confirmBtn = new JButton("Xác nhận");
     private final JButton cancelBtn = new JButton("Trở về");
     private final JLabel errorLabel = new JLabel(" ");
@@ -39,6 +43,12 @@ public class LevelSelectionPanel extends JPanel
     private DifficultyLevel selectedLevel = null;
 
     public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart) {
+        this(playerId, onGameStart, 0);
+    }
+
+    public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart, long initialGold) {
+        this.onGameStart  = onGameStart;
+        this.controller   = new LevelSelectionController(playerId, this);
         this.onGameStart = onGameStart;
         this.controller = new LevelSelectionController(playerId, this);
 
@@ -47,14 +57,25 @@ public class LevelSelectionPanel extends JPanel
         setBorder(new EmptyBorder(40, 60, 40, 60));
 
         buildUI();
+        setGoldAmount(initialGold);
         controller.loadLevelList();
     }
 
     private void buildUI() {
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+
         JLabel title = new JLabel("Chọn Cấp Độ", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 28));
         title.setForeground(TEXT_PRIMARY);
-        add(title, BorderLayout.NORTH);
+
+        goldLabel.setForeground(new Color(0xFFD54F));
+        goldLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        goldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        topPanel.add(title, BorderLayout.CENTER);
+        topPanel.add(goldLabel, BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
 
         levelCardsPanel.setBackground(BG_COLOR);
         add(levelCardsPanel, BorderLayout.CENTER);
@@ -172,6 +193,10 @@ public class LevelSelectionPanel extends JPanel
                 "Thông tin cấp độ - " + level.getLevelName(),
                 JOptionPane.INFORMATION_MESSAGE
         );
+    }
+
+    public void setGoldAmount(long goldAmount) {
+        goldLabel.setText("Vàng: " + Math.max(0, goldAmount));
     }
 
     private void styleButton(JButton btn, Color bg, Color fg) {

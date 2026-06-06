@@ -2,6 +2,7 @@ package memorygame;
 
 import memorygame.controller.GameFlowController;
 import memorygame.model.GameEngine;
+import memorygame.model.PlayerProfile;
 import memorygame.view.LevelSelectionPanel;
 import memorygame.view.MainMenuPanel;
 
@@ -13,6 +14,7 @@ import java.nio.file.Paths;
 public class MyMain {
 
     private static final Path SAVE_FILE = Paths.get("memorygame_save.dat");
+    private static final PlayerProfile PLAYER_PROFILE = new PlayerProfile();
     private static final String APP_TITLE = "Memory Card Game";
 
     public static void main(String[] args) {
@@ -67,17 +69,17 @@ public class MyMain {
             }
 
             frame.dispose();
-            GameFlowController.openGameWindow(engine, SAVE_FILE);
-        });
+            GameFlowController.openGameWindow(engine, SAVE_FILE, PLAYER_PROFILE, MyMain::showLevelSelection);
+        }, PLAYER_PROFILE.getGold());
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         bottom.setBackground(new Color(0x1A1A2E));
 
         JButton continueBtn = createStyledButton("Tiếp tục", new Color(0x4CAF50));
         continueBtn.addActionListener(e ->
-                GameFlowController.continueGame(frame, SAVE_FILE, engine -> {
+                GameFlowController.continueGame(frame, SAVE_FILE, PLAYER_PROFILE, engine -> {
                     frame.dispose();
-                    GameFlowController.openGameWindow(engine, SAVE_FILE);
+                    GameFlowController.openGameWindow(engine, SAVE_FILE, PLAYER_PROFILE, MyMain::showLevelSelection);
                 })
         );
 
