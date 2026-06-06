@@ -8,6 +8,8 @@ import memorygame.view.GameBoardPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -125,6 +127,46 @@ public final class GameFlowController {
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         bottomPanel.setBackground(new Color(0x1A1A2E));
 
+        // Nút Gợi ý
+        int initialHints = engine.getGameState().getHintCount();
+        JButton hintBtn = new JButton("💡 Gợi ý (" + initialHints + ")");
+        hintBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        hintBtn.setPreferredSize(new Dimension(130, 40));
+        // Disable ngay nếu ban đầu đã hết hint (ví dụ: load save đã dùng hết)
+        if (initialHints <= 0) {
+            hintBtn.setEnabled(false);
+        }
+
+        // Callback: khi GameController gọi updateHintDisplay() → cập nhật text nút
+        boardPanel.setOnHintCountChanged(remaining -> {
+            hintBtn.setText("💡 Gợi ý (" + remaining + ")");
+            updateHintLabel(hintLabel, engine);
+            if (remaining <= 0) {
+                hintBtn.setEnabled(false);
+            }
+        });
+
+        // Callback: khi hint animation kết thúc → re-enable nút (nếu còn hint)
+        boardPanel.setOnHintAnimationDone(() -> {
+            if (engine.getGameState().getHintCount() > 0) {
+                hintBtn.setEnabled(true);
+            }
+        });
+
+        hintBtn.addActionListener(e -> {
+            // Disable ngay để chặn spam click trong khi hint đang hiển thị
+            hintBtn.setEnabled(false);
+            boolean hintStarted = gameController.onHintClick();
+            if (!hintStarted) {
+                // Hint bị reject (board locked, hết hint, hoặc không tìm thấy cặp)
+                // → re-enable nếu còn hint
+                if (engine.getGameState().getHintCount() > 0) {
+                    hintBtn.setEnabled(true);
+                }
+            }
+            // Nếu hintStarted = true → nút giữ disabled cho đến onHintAnimationDone
+        });
+
         // Nút Chơi lại
         JButton resetBtn = new JButton("Chơi lại");
         resetBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
@@ -212,9 +254,22 @@ public final class GameFlowController {
         countdownTimer[0].setRepeats(true);
         countdownTimer[0].start();
 
+        // ===== STOP TIMER KHI ĐÓNG CỬA SỔ (nút X) =====
+        gameFrame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (countdownTimer[0] != null) {
+                    countdownTimer[0].stop();
+                    countdownTimer[0] = null;
+                }
+            }
+        });
+
         // ===== NÚT CHƠI LẠI (với logic reset timer) =====
         resetBtn.addActionListener(e -> {
-            countdownTimer[0].stop();  // Stop timer cũ
+            if (countdownTimer[0] != null) {
+                countdownTimer[0].stop();  // Stop timer cũ
+            }
 
             engine.initBoard(engine.getSession());
             boardPanel.initializeBoard(engine.getCards());
@@ -222,6 +277,7 @@ public final class GameFlowController {
             updateTimeLabel(timeLabel, engine);
             updateHintLabel(hintLabel, engine);
             hintBtn.setText("💡 Gợi ý (" + engine.getGameState().getHintCount() + ")");
+            hintBtn.setEnabled(engine.getGameState().getHintCount() > 0);
 
             // Start timer mới
             countdownTimer[0] = new Timer(1000, evt -> {
@@ -241,7 +297,9 @@ public final class GameFlowController {
 
         // ===== NÚT LƯU VÀ THOÁT (với logic stop timer) =====
         saveExitBtn.addActionListener(e -> {
-            countdownTimer[0].stop();  // Stop timer khi lưu
+            if (countdownTimer[0] != null) {
+                countdownTimer[0].stop();  // Stop timer khi lưu
+            }
 
             try {
                 engine.saveProgress(saveFile, playerProfile);
@@ -254,7 +312,9 @@ public final class GameFlowController {
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE
                 );
-                countdownTimer[0].start();  // Tiếp tục timer nếu lưu thất bại
+                if (countdownTimer[0] != null) {
+                    countdownTimer[0].start();  // Tiếp tục timer nếu lưu thất bại
+                }
             }
         });
 
