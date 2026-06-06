@@ -2,6 +2,8 @@ package memorygame.view;
 
 import memorygame.model.Card;
 import memorygame.model.CardState;
+import memorygame.model.PlayerProfile;
+import memorygame.model.ShopCatalog;
 
 import javax.swing.*;
 import java.awt.*;
@@ -29,6 +31,7 @@ public class GameBoardPanel extends JPanel {
     private static final int BOARD_PAD = 16;
 
     private List<Card> cards;
+    private final PlayerProfile playerProfile;
     private int gridRows;
     private int gridCols;
     private Consumer<Card> onCardClicked;
@@ -39,8 +42,14 @@ public class GameBoardPanel extends JPanel {
     private CardButton[] cardButtons;
 
     public GameBoardPanel(int gridRows, int gridCols) {
+        this(gridRows, gridCols, null);
+    }
+
+    // UC-15 - Le VietKhanh: Nhận PlayerProfile để áp dụng skin/theme đã mua từ cửa hàng.
+    public GameBoardPanel(int gridRows, int gridCols, PlayerProfile playerProfile) {
         this.gridRows = gridRows;
         this.gridCols = gridCols;
+        this.playerProfile = playerProfile;
 
         setBackground(BG_COLOR);
         setLayout(new GridLayout(gridRows, gridCols, CARD_GAP, CARD_GAP));
@@ -153,6 +162,37 @@ public class GameBoardPanel extends JPanel {
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
+
+    private String getSelectedBackSkinId() {
+        if (playerProfile == null) {
+            return ShopCatalog.DEFAULT_BACK_SKIN_ID;
+        }
+        return playerProfile.getSelectedBackSkinId();
+    }
+
+    private String getSelectedFaceThemeId() {
+        if (playerProfile == null) {
+            return ShopCatalog.DEFAULT_FACE_THEME_ID;
+        }
+        return playerProfile.getSelectedFaceThemeId();
+    }
+
+    private Color getCardBackColor(boolean hovering) {
+        String skinId = getSelectedBackSkinId();
+        return hovering ? ShopCatalog.getBackHoverColor(skinId) : ShopCatalog.getBackColor(skinId);
+    }
+
+    private Color getCardFaceTextColor() {
+        return ShopCatalog.getFaceColor(getSelectedFaceThemeId());
+    }
+
+    private String getCardFaceText(Card card) {
+        if (card == null) {
+            return "";
+        }
+        return ShopCatalog.resolveFaceText(card.getValue(), getSelectedFaceThemeId());
+    }
+
     private class CardButton extends JButton {
         private static final int MATCH_FLASH_DURATION = 500;
         private final Card card;
@@ -199,9 +239,9 @@ public class GameBoardPanel extends JPanel {
                 setForeground(new Color(0xC8E6C9));
                 setEnabled(false);
             } else if (state == CardState.FACE_UP) {
-                setText(card.getValue());
+                setText(getCardFaceText(card));
                 setFont(CARD_FONT_VALUE);
-                setForeground(Color.WHITE);
+                setForeground(getCardFaceTextColor());
                 setEnabled(true);
             } else {
                 setText("?");
@@ -260,7 +300,7 @@ public class GameBoardPanel extends JPanel {
             } else if (state == CardState.FACE_UP) {
                 bgColor = CARD_FACE_UP;
             } else {
-                bgColor = (hovering && !boardLocked) ? CARD_BACK_HOVER : CARD_BACK;
+                bgColor = getCardBackColor(hovering && !boardLocked);
             }
             g2.setColor(bgColor);
             g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
