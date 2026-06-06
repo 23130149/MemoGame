@@ -3,6 +3,7 @@ package memorygame.controller;
 import memorygame.model.GameEngine;
 import memorygame.model.PlayerProfile;
 import memorygame.model.RewardCalculator;
+import memorygame.persistence.PlayerProfileStore;
 import memorygame.persistence.SaveGameService;
 import memorygame.view.GameBoardPanel;
 
@@ -121,7 +122,7 @@ public final class GameFlowController {
         // ===== BOARD PANEL =====
         int rows = engine.getSession().getLevel().getGridRows();
         int cols = engine.getSession().getLevel().getGridCols();
-        GameBoardPanel boardPanel = new GameBoardPanel(rows, cols);
+        GameBoardPanel boardPanel = new GameBoardPanel(rows, cols, playerProfile);
 
         // ===== BOTTOM PANEL: NÚT ĐIỀU KHIỂN =====
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
@@ -152,21 +153,6 @@ public final class GameFlowController {
                 hintBtn.setEnabled(true);
             }
         });
-
-        hintBtn.addActionListener(e -> {
-            // Disable ngay để chặn spam click trong khi hint đang hiển thị
-            hintBtn.setEnabled(false);
-            boolean hintStarted = gameController.onHintClick();
-            if (!hintStarted) {
-                // Hint bị reject (board locked, hết hint, hoặc không tìm thấy cặp)
-                // → re-enable nếu còn hint
-                if (engine.getGameState().getHintCount() > 0) {
-                    hintBtn.setEnabled(true);
-                }
-            }
-            // Nếu hintStarted = true → nút giữ disabled cho đến onHintAnimationDone
-        });
-
         // Nút Chơi lại
         JButton resetBtn = new JButton("Chơi lại");
         resetBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
@@ -191,6 +177,7 @@ public final class GameFlowController {
                     }
                     boardPanel.setBoardLocked(true);
                     updateGoldLabel(goldLabel, playerProfile);
+                    PlayerProfileStore.saveDefault(playerProfile);
 
                     String message = "Chúc mừng! Bạn đã hoàn thành!\n"
                             + "Điểm: " + score + " | Số lượt: " + moves + "\n"
@@ -226,13 +213,16 @@ public final class GameFlowController {
         );
 
         // Nút Gợi ý
-        JButton hintBtn = new JButton("💡 Gợi ý (" + engine.getGameState().getHintCount() + ")");
-        hintBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        hintBtn.setPreferredSize(new Dimension(130, 40));
         hintBtn.addActionListener(e -> {
-            gameController.onHintClick();
+            // UC-07/UC-08: chặn spam click trong khi hiệu ứng gợi ý đang chạy.
+            hintBtn.setEnabled(false);
+            boolean hintStarted = gameController.onHintClick();
             updateHintLabel(hintLabel, engine);
             hintBtn.setText("💡 Gợi ý (" + engine.getGameState().getHintCount() + ")");
+
+            if (!hintStarted && engine.getGameState().getHintCount() > 0) {
+                hintBtn.setEnabled(true);
+            }
         });
 
         bottomPanel.add(hintBtn);
@@ -303,6 +293,7 @@ public final class GameFlowController {
 
             try {
                 engine.saveProgress(saveFile, playerProfile);
+                PlayerProfileStore.saveDefault(playerProfile);
                 JOptionPane.showMessageDialog(gameFrame, "Đã lưu tiến trình.");
                 gameFrame.dispose();
             } catch (IOException ex) {
@@ -375,6 +366,7 @@ public final class GameFlowController {
             playerProfile.creditGold(rewardGold);
             totalGold = playerProfile.getGold();
             updateGoldLabel(goldLabel, playerProfile);
+            PlayerProfileStore.saveDefault(playerProfile);
         }
 
         String message = "⏰ Hết giờ! Bạn thua.\n"

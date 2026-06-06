@@ -112,7 +112,6 @@ public final class SaveGameService {
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        GameSaveData saveData = new GameSaveData(session.getPlayerId(), session.getLevel().getLevelId(), state.getScore(), state.getMovesCount(), state.getRemainingPairs(), state.isLocked(), firstId, secondId, cardData, state.getHintCount(), state.getTimeLeftSec());
 
         // Backup file cũ trước khi ghi đè
         backupIfExists(savePath);
@@ -161,10 +160,12 @@ public final class SaveGameService {
             throw new FileNotFoundException("Không tìm thấy file save: " + savePath);
         }
 
-        // Deserialize từ file
+        // Deserialize từ file JSON đã ghi bằng Gson.
         GameSaveData data;
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(savePath.toFile()))) {
-            data = (GameSaveData) in.readObject();
+        String json = Files.readString(savePath, StandardCharsets.UTF_8);
+        data = GSON.fromJson(json, GameSaveData.class);
+        if (data == null) {
+            throw new IOException("File save không hợp lệ hoặc bị rỗng.");
         }
 
         // Kiểm tra level ID hợp lệ

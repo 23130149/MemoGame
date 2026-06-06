@@ -14,12 +14,14 @@ public class MainMenuPanel extends JPanel {
     private static final Color ACCENT_BLUE = new Color(0x2196F3);
     private static final Color ACCENT_GREEN = new Color(0x4CAF50);
     private static final Color ACCENT_AMBER = new Color(0xFF9800);
+    private static final Color ACCENT_PURPLE = new Color(0x8E24AA);
     private static final Color ACCENT_RED = new Color(0xE53935);
     private static final Color TEXT_PRIMARY = Color.WHITE;
     private static final Color TEXT_SECONDARY = new Color(0xB0BEC5);
 
     private Runnable onStartGame;
     private Runnable onContinueGame;
+    private Runnable onOpenShop;
     private Runnable onExitGame;
 
     public MainMenuPanel() {
@@ -38,6 +40,10 @@ public class MainMenuPanel extends JPanel {
 
     public void setOnContinueGame(Runnable callback) {
         this.onContinueGame = callback;
+    }
+
+    public void setOnOpenShop(Runnable callback) {
+        this.onOpenShop = callback;
     }
 
     public void setOnExitGame(Runnable callback) {
@@ -133,6 +139,13 @@ public class MainMenuPanel extends JPanel {
         buttonContainer.add(continueBtn);
         buttonContainer.add(Box.createVerticalStrut(14));
 
+        MenuButton shopBtn = new MenuButton("Cửa hàng", ACCENT_PURPLE);
+        shopBtn.addActionListener(e -> {
+            if (onOpenShop != null) onOpenShop.run();
+        });
+        buttonContainer.add(shopBtn);
+        buttonContainer.add(Box.createVerticalStrut(14));
+
         MenuButton guideBtn = new MenuButton("Hướng dẫn chơi", ACCENT_AMBER);
         guideBtn.addActionListener(e -> showInstructions());
         buttonContainer.add(guideBtn);
@@ -171,7 +184,8 @@ public class MainMenuPanel extends JPanel {
                         + "<p><b>3.</b> Nếu 2 thẻ giống nhau, chúng sẽ được giữ mở và bạn được cộng điểm.</p>"
                         + "<p><b>4.</b> Nếu 2 thẻ khác nhau, chúng sẽ bị úp lại sau 1 giây.</p>"
                         + "<p><b>5.</b> Nhấn nút <b>Gợi ý</b> để xem tạm thời một cặp thẻ (số lượt giới hạn).</p>"
-                        + "<p><b>6.</b> Hoàn thành tất cả các cặp thẻ trước khi hết giờ để thắng.</p>"
+                        + "<p><b>6.</b> Điểm sau ván chơi được quy đổi thành vàng để mua vật phẩm trong Cửa hàng.</p>"
+                        + "<p><b>7.</b> Hoàn thành tất cả các cặp thẻ trước khi hết giờ để thắng.</p>"
                         + "<hr style='border-color:#2196F3;'>"
                         + "<p style='color:#B0BEC5; font-size:11px;'>"
                         + "Mẹo: Ghi nhớ vị trí thẻ đã lật để tăng hiệu quả!</p>"

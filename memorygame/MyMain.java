@@ -3,8 +3,10 @@ package memorygame;
 import memorygame.controller.GameFlowController;
 import memorygame.model.GameEngine;
 import memorygame.model.PlayerProfile;
+import memorygame.persistence.PlayerProfileStore;
 import memorygame.view.LevelSelectionPanel;
 import memorygame.view.MainMenuPanel;
+import memorygame.view.ShopPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,6 +24,8 @@ public class MyMain {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {
         }
+        // UC-15 - Le VietKhanh: Tải vàng/vật phẩm đã mua trước khi mở menu.
+        PlayerProfileStore.loadDefault(PLAYER_PROFILE);
         SwingUtilities.invokeLater(MyMain::showMainMenu);
     }
 
@@ -36,13 +40,19 @@ public class MyMain {
         });
 
         menuPanel.setOnContinueGame(() ->
-                GameFlowController.continueGame(frame, SAVE_FILE, engine -> {
+                GameFlowController.continueGame(frame, SAVE_FILE, PLAYER_PROFILE, engine -> {
                     frame.dispose();
-                    GameFlowController.openGameWindow(engine, SAVE_FILE);
+                    GameFlowController.openGameWindow(engine, SAVE_FILE, PLAYER_PROFILE, MyMain::showMainMenu);
                 })
         );
 
+        menuPanel.setOnOpenShop(() -> {
+            frame.dispose();
+            showShop();
+        });
+
         menuPanel.setOnExitGame(() -> {
+            PlayerProfileStore.saveDefault(PLAYER_PROFILE);
             frame.dispose();
             System.exit(0);
         });
@@ -98,6 +108,19 @@ public class MyMain {
         root.add(bottom, BorderLayout.SOUTH);
 
         frame.setContentPane(root);
+        frame.setVisible(true);
+    }
+
+
+    public static void showShop() {
+        JFrame frame = createAppFrame(APP_TITLE + " - Cửa hàng", 760, 620);
+
+        ShopPanel shopPanel = new ShopPanel(PLAYER_PROFILE, () -> {
+            frame.dispose();
+            showMainMenu();
+        });
+
+        frame.setContentPane(shopPanel);
         frame.setVisible(true);
     }
 
