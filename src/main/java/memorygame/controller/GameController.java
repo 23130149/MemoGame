@@ -39,7 +39,6 @@ public class GameController {
         this.engine = engine;
         this.boardPanel = boardPanel;
         this.cardFlipController = new memorygame.controller.CardFlipController();
-        this.cardFlipController = new memorygame.controller.CardFlipController();
         this.playerProfile = playerProfile;
         this.gameCompletionHandler = gameCompletionHandler;
 
