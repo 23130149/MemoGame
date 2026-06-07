@@ -287,15 +287,23 @@ public final class GameFlowController {
 
         // ===== NÚT LƯU VÀ THOÁT (với logic stop timer) =====
         saveExitBtn.addActionListener(e -> {
+            // UC09 - Bước 1: Dừng timer trước khi lưu
             if (countdownTimer[0] != null) {
-                countdownTimer[0].stop();  // Stop timer khi lưu
+                countdownTimer[0].stop();
             }
-
             try {
+                // UC09 - Bước 2: Gọi saveProgress (đã nâng cấp dùng Gson + backup + ATOMIC_M
                 engine.saveProgress(saveFile, playerProfile);
                 PlayerProfileStore.saveDefault(playerProfile);
                 JOptionPane.showMessageDialog(gameFrame, "Đã lưu tiến trình.");
                 gameFrame.dispose();
+
+                // [PHÁT TRIỂN TIẾP - Phạm Quang Thiện]
+                // UC09 - Bước 4: Tự động quay về menu chính sau khi lưu thành công
+                // Bản gốc chỉ dispose() cửa sổ, không về menu
+                if (onBackToMenu != null) {
+                    onBackToMenu.run(); // ← thêm dòng này
+                }
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(
                         gameFrame,
@@ -303,8 +311,9 @@ public final class GameFlowController {
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE
                 );
+                // Tiếp tục timer nếu lưu thất bạiZ
                 if (countdownTimer[0] != null) {
-                    countdownTimer[0].start();  // Tiếp tục timer nếu lưu thất bại
+                    countdownTimer[0].start();
                 }
             }
         });

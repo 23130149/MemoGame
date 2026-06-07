@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 
 public class MyMain {
 
-    private static final Path SAVE_FILE = Paths.get("memorygame_save.dat");
+    private static final Path SAVE_FILE = Paths.get("memorygame_save.json");
     private static final PlayerProfile PLAYER_PROFILE = new PlayerProfile();
     private static final String APP_TITLE = "Memory Card Game";
 
