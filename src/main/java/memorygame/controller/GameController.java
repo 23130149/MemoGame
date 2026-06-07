@@ -18,10 +18,11 @@ public class GameController {
     private static final int MATCH_POINTS = 10;
     private static final int FLIP_DELAY_MS = 1000;
     private static final int HINT_DELAY_MS = 1500;
+    private static final int MISMATCH_PENALTY = 5;
 
     private final GameEngine engine;
     private final GameBoardPanel boardPanel;
-    private final CardFlipController cardFlipController;
+    private final memorygame.controller.CardFlipController cardFlipController;
     private final PlayerProfile playerProfile;
     private final GameCompletionHandler gameCompletionHandler;
 
@@ -37,7 +38,8 @@ public class GameController {
             PlayerProfile playerProfile, GameCompletionHandler gameCompletionHandler) {
         this.engine = engine;
         this.boardPanel = boardPanel;
-        this.cardFlipController = new CardFlipController();
+        this.cardFlipController = new memorygame.controller.CardFlipController();
+        this.cardFlipController = new memorygame.controller.CardFlipController();
         this.playerProfile = playerProfile;
         this.gameCompletionHandler = gameCompletionHandler;
 
@@ -48,6 +50,10 @@ public class GameController {
     private void handleCardClick(Card clickedCard) {
         // Không cho click nếu board locked hoặc thẻ đã match
         if (engine.getGameState().isLocked() || clickedCard.isMatched()) {
+            return;
+        }
+
+        if (clickedCard.getState() == CardState.FACE_UP) {
             return;
         }
 
@@ -148,12 +154,10 @@ public class GameController {
     }
 
     private void handleMatchFailed(Card first, Card second, GameState gameState) {
-        // Lật lại thẻ
+        boardPanel.showNoMatchEffect(first, second);
         cardFlipController.flipCardFaceDown(first);
         cardFlipController.flipCardFaceDown(second);
-        boardPanel.showNoMatchEffect(first, second);
-        boardPanel.repaintCard(first);
-        boardPanel.repaintCard(second);
+        gameState.updateScore(-MISMATCH_PENALTY);
     }
 
     private void resetTurn() {

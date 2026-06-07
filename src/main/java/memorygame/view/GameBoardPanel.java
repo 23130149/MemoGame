@@ -22,11 +22,13 @@ public class GameBoardPanel extends JPanel {
     private static final Color BG_COLOR = new Color(0x1A1A2E);
     private static final Color CARD_BACK = new Color(0x0F3460);
     private static final Color CARD_BACK_HOVER = new Color(0x154785);
-    private static final Color CARD_MATCHED = new Color(0x2E7D32);
+    private static final Color CARD_MATCHED = new Color(0x1B5E20);
     private static final Color CARD_FACE_UP = new Color(0x1976D2);
     private static final Color BORDER_COLOR = new Color(0x16213E);
     private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);
     private static final Color HINT_BORDER = new Color(255, 215, 0, 200);
+    private boolean flashGreen = false;  // ← đổi tên
+    private boolean flashRed = false;
 
     private static final Font CARD_FONT = new Font("SansSerif", Font.BOLD, 22);
 
@@ -444,17 +446,32 @@ public class GameBoardPanel extends JPanel {
 
         void updateAppearance() {
             setText("");
-
+            if (state == CardState.MATCHED) {
+                setText(card.getValue());
+                setFont(CARD_FONT_VALUE);
+                setForeground(Color.WHITE);
+                setEnabled(false);
+            } else if (state == CardState.FACE_UP) {
+                setText(card.getValue());
+                setFont(CARD_FONT_VALUE);
+                setForeground(Color.WHITE);
+                setEnabled(true);
+            } else {
+                setText("?");
+                setFont(CARD_FONT);
+                setForeground(new Color(0x64B5F6));
+                setEnabled(true);
+            }
             CardState state = card.getState();
             setEnabled(state != CardState.MATCHED);
         }
 
         void showMatchEffect() {
-            flashWhite = true;
+            flashGreen = true;
             repaint();
 
             new Timer(MATCH_FLASH_DURATION, e -> {
-                flashWhite = false;
+                flashGreen = false;
                 updateAppearance();
                 repaint();
                 ((Timer) e.getSource()).stop();
@@ -462,7 +479,10 @@ public class GameBoardPanel extends JPanel {
         }
 
         void showNoMatchEffect() {
+            flashRed = true;
+            repaint();
             new Timer(MATCH_FLASH_DURATION, e -> {
+                flashRed = false;
                 updateAppearance();
                 repaint();
                 ((Timer) e.getSource()).stop();
@@ -498,81 +518,102 @@ public class GameBoardPanel extends JPanel {
             CardState state = card.getState();
 
             Color bgColor;
+            if (flashGreen) {
+                bgColor = new Color(0x1B5E20);
+            } else if (flashRed) {
+                bgColor = new Color(0xEF5350);
 
-            if (flashWhite) {
-                bgColor = new Color(0xE8F5E9);
-            } else if (state == CardState.MATCHED) {
-                bgColor = CARD_MATCHED;
-            } else if (state == CardState.FACE_UP) {
-                bgColor = CARD_FACE_UP;
-            } else {
-                bgColor = hovering && !boardLocked ? CARD_BACK_HOVER : CARD_BACK;
-            }
-
-            g2.setColor(bgColor);
-            g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
-
-            if (state == CardState.MATCHED) {
-                g2.setColor(new Color(0x4CAF50));
-            } else if (state == CardState.FACE_UP) {
-                g2.setColor(new Color(0x42A5F5));
-            } else {
-                g2.setColor(BORDER_COLOR);
-            }
-
-            g2.setStroke(new BasicStroke(2f));
-            g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
-
-            Image image = null;
-
-            if (state == CardState.FACE_DOWN) {
-                image = getCardBackImage();
-            } else if (state == CardState.FACE_UP || state == CardState.MATCHED) {
-                image = getCardFaceImage(card);
-            }
-
-            if (image != null) {
-                int padding = 8;
-
-                int availableW = w - padding * 2;
-                int availableH = h - padding * 2;
-
-                int imgW = image.getWidth(this);
-                int imgH = image.getHeight(this);
-
-                if (imgW > 0 && imgH > 0) {
-                    double scale = Math.min(
-                            (double) availableW / imgW,
-                            (double) availableH / imgH
-                    );
-
-                    int drawW = (int) (imgW * scale);
-                    int drawH = (int) (imgH * scale);
-
-                    int x = (w - drawW) / 2;
-                    int y = (h - drawH) / 2;
-
-                    g2.drawImage(
-                            image,
-                            x,
-                            y,
-                            drawW,
-                            drawH,
-                            this
-                    );
+                if (flashWhite) {
+                    bgColor = new Color(0xE8F5E9);
+                } else if (state == CardState.MATCHED) {
+                    bgColor = CARD_MATCHED;
+                } else if (state == CardState.FACE_UP) {
+                    bgColor = CARD_FACE_UP;
+                } else {
+                    bgColor = hovering && !boardLocked ? CARD_BACK_HOVER : CARD_BACK;
                 }
-            }
 
-            if (hintHighlighted) {
-                g2.setColor(HINT_HIGHLIGHT);
+                g2.setColor(bgColor);
                 g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
 
-                g2.setColor(HINT_BORDER);
-                g2.setStroke(new BasicStroke(3));
+                if (flashRed) {
+                    g2.setColor(new Color(0xFF1744));
+                } else if (state == CardState.MATCHED) {
+                    g2.setColor(new Color(0x00E676));
+                } else if (state == CardState.FACE_UP) {
+                    g2.setColor(new Color(0x42A5F5));
+                } else {
+                    g2.setColor(BORDER_COLOR);
+                }
+                g2.setStroke(new BasicStroke(state == CardState.MATCHED ? 3f : 2f));
                 g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
-            }
 
-            g2.dispose();
+                Image image = null;
+
+                if (state == CardState.FACE_DOWN) {
+                    image = getCardBackImage();
+                } else if (state == CardState.FACE_UP || state == CardState.MATCHED) {
+                    image = getCardFaceImage(card);
+                }
+
+                g2.setFont(getFont());
+                if (flashGreen) {
+                    g2.setColor(Color.WHITE);
+                } else if (flashRed) {
+                    g2.setColor(Color.WHITE);
+                } else {
+                    g2.setColor(getForeground());
+                }
+                FontMetrics fm = g2.getFontMetrics();
+                String text = getText();
+                if (text != null && !text.isEmpty()) {
+                    int textX = (w - fm.stringWidth(text)) / 2;
+                    int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
+                    g2.drawString(text, textX, textY);
+                    if (image != null) {
+                        int padding = 8;
+
+                        int availableW = w - padding * 2;
+                        int availableH = h - padding * 2;
+
+                        int imgW = image.getWidth(this);
+                        int imgH = image.getHeight(this);
+
+                        if (imgW > 0 && imgH > 0) {
+                            double scale = Math.min(
+                                    (double) availableW / imgW,
+                                    (double) availableH / imgH
+                            );
+
+                            int drawW = (int) (imgW * scale);
+                            int drawH = (int) (imgH * scale);
+
+                            int x = (w - drawW) / 2;
+                            int y = (h - drawH) / 2;
+
+                            g2.drawImage(
+                                    image,
+                                    x,
+                                    y,
+                                    drawW,
+                                    drawH,
+                                    this
+                            );
+                        }
+                    }
+
+                    if (hintHighlighted) {
+                        g2.setColor(HINT_HIGHLIGHT);
+                        g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
+
+                        g2.setColor(HINT_BORDER);
+                        g2.setStroke(new BasicStroke(3));
+                        g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
+                    }
+
+                    g2.dispose();
+                }
+            }
         }
     }
 }
