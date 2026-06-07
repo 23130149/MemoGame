@@ -27,8 +27,6 @@ public class GameBoardPanel extends JPanel {
     private static final Color BORDER_COLOR = new Color(0x16213E);
     private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);
     private static final Color HINT_BORDER = new Color(255, 215, 0, 200);
-    private boolean flashGreen = false;
-    private boolean flashRed = false;
 
     private static final Font CARD_FONT = new Font("SansSerif", Font.BOLD, 22);
     private static final Font CARD_FONT_VALUE = new Font("Arial", Font.BOLD, 20);
@@ -400,6 +398,9 @@ public class GameBoardPanel extends JPanel {
     private class CardButton extends JButton {
 
         private static final int MATCH_FLASH_DURATION = 500;
+
+        private boolean flashGreen = false;
+        private boolean flashRed = false;
 
         private final Card card;
         private boolean hintHighlighted = false;
