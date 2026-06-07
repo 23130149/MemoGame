@@ -5,11 +5,16 @@ import memorygame.model.CardState;
 import memorygame.model.PlayerProfile;
 import memorygame.model.ShopCatalog;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class GameBoardPanel extends JPanel {
@@ -20,15 +25,14 @@ public class GameBoardPanel extends JPanel {
     private static final Color CARD_MATCHED = new Color(0x2E7D32);
     private static final Color CARD_FACE_UP = new Color(0x1976D2);
     private static final Color BORDER_COLOR = new Color(0x16213E);
-    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);  // Vang ban trong
-    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);  // Vang dam
+    private static final Color HINT_HIGHLIGHT = new Color(255, 255, 0, 100);
+    private static final Color HINT_BORDER = new Color(255, 215, 0, 200);
 
-    private static final Font CARD_FONT = new Font("Segoe UI", Font.BOLD, 24);
-    private static final Font CARD_FONT_VALUE = new Font("Segoe UI", Font.BOLD, 22);
+    private static final Font CARD_FONT = new Font("SansSerif", Font.BOLD, 22);
 
     private static final int CARD_ARC = 14;
-    private static final int CARD_GAP = 10;
-    private static final int BOARD_PAD = 20;
+    private static final int CARD_GAP = 8;
+    private static final int BOARD_PAD = 16;
 
     private List<Card> cards;
     private final PlayerProfile playerProfile;
@@ -40,12 +44,12 @@ public class GameBoardPanel extends JPanel {
     private boolean boardLocked = false;
 
     private CardButton[] cardButtons;
+    private final Map<String, Image> imageCache = new HashMap<>();
 
     public GameBoardPanel(int gridRows, int gridCols) {
         this(gridRows, gridCols, null);
     }
 
-    // UC-15 - Le VietKhanh: Nhận PlayerProfile để áp dụng skin/theme đã mua từ cửa hàng.
     public GameBoardPanel(int gridRows, int gridCols, PlayerProfile playerProfile) {
         this.gridRows = gridRows;
         this.gridCols = gridCols;
@@ -61,9 +65,11 @@ public class GameBoardPanel extends JPanel {
         removeAll();
 
         cardButtons = new CardButton[cards.size()];
+
         for (int i = 0; i < cards.size(); i++) {
             Card card = cards.get(i);
             CardButton btn = new CardButton(card);
+
             btn.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -72,6 +78,7 @@ public class GameBoardPanel extends JPanel {
                     }
                 }
             });
+
             cardButtons[i] = btn;
             add(btn);
         }
@@ -81,6 +88,10 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void repaintCard(Card card) {
+        if (cardButtons == null) {
+            return;
+        }
+
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == card) {
                 btn.updateAppearance();
@@ -91,6 +102,10 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void showMatchEffect(Card first, Card second) {
+        if (cardButtons == null) {
+            return;
+        }
+
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == first || btn.getCard() == second) {
                 btn.showMatchEffect();
@@ -99,6 +114,10 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void showNoMatchEffect(Card first, Card second) {
+        if (cardButtons == null) {
+            return;
+        }
+
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == first || btn.getCard() == second) {
                 btn.showNoMatchEffect();
@@ -107,6 +126,10 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void showHintEffect(Card cardX, Card cardY) {
+        if (cardButtons == null) {
+            return;
+        }
+
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == cardX || btn.getCard() == cardY) {
                 btn.showHintHighlight();
@@ -115,6 +138,10 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void hideHintEffect(Card cardX, Card cardY) {
+        if (cardButtons == null) {
+            return;
+        }
+
         for (CardButton btn : cardButtons) {
             if (btn.getCard() == cardX || btn.getCard() == cardY) {
                 btn.hideHintHighlight();
@@ -151,50 +178,234 @@ public class GameBoardPanel extends JPanel {
     }
 
     public void showNotify(String message) {
-        JOptionPane.showMessageDialog(this, message, "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(
+                this,
+                message,
+                "Thông báo",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     public void showGameOver(int score, int moves) {
-        JOptionPane.showMessageDialog(this,
+        JOptionPane.showMessageDialog(
+                this,
                 "Chúc mừng! Bạn đã hoàn thành!\nĐiểm: " + score + " | Số lượt: " + moves,
                 "Kết thúc trò chơi",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
-
-    private String getSelectedBackSkinId() {
+    private String getSelectedThemeId() {
         if (playerProfile == null) {
-            return ShopCatalog.DEFAULT_BACK_SKIN_ID;
+            return ShopCatalog.DEFAULT_THEME_ID;
         }
-        return playerProfile.getSelectedBackSkinId();
-    }
 
-    private String getSelectedFaceThemeId() {
-        if (playerProfile == null) {
-            return ShopCatalog.DEFAULT_FACE_THEME_ID;
+        String selectedThemeId = playerProfile.getSelectedThemeId();
+        if (selectedThemeId == null || selectedThemeId.isBlank()) {
+            return ShopCatalog.DEFAULT_THEME_ID;
         }
-        return playerProfile.getSelectedFaceThemeId();
+
+        return selectedThemeId;
     }
 
-    private Color getCardBackColor(boolean hovering) {
-        String skinId = getSelectedBackSkinId();
-        return hovering ? ShopCatalog.getBackHoverColor(skinId) : ShopCatalog.getBackColor(skinId);
+    private Image getCardBackImage() {
+        String themeId = getSelectedThemeId();
+
+        if (playerProfile == null || ShopCatalog.DEFAULT_THEME_ID.equals(themeId)) {
+            Image img = loadImage("/memorygame/themes/back_question.png");
+            if (img != null) {
+                return img;
+            }
+            return createQuestionMarkImage(128, 128);
+        }
+
+        return loadImage(ShopCatalog.getBackImagePath(themeId));
     }
 
-    private Color getCardFaceTextColor() {
-        return ShopCatalog.getFaceColor(getSelectedFaceThemeId());
+    private Image createQuestionMarkImage(int width, int height) {
+        try {
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                    width,
+                    height,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB
+            );
+
+            Graphics2D g = img.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            g.setColor(new Color(0x0F3460));
+            g.fillRect(0, 0, width, height);
+
+            g.setColor(Color.WHITE);
+            Font f = new Font("SansSerif", Font.BOLD, Math.max(12, width / 2));
+            g.setFont(f);
+
+            String q = "?";
+            FontMetrics fm = g.getFontMetrics();
+            int tx = (width - fm.stringWidth(q)) / 2;
+            int ty = (height - fm.getHeight()) / 2 + fm.getAscent();
+
+            g.drawString(q, tx, ty);
+            g.dispose();
+
+            return img;
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
-    private String getCardFaceText(Card card) {
+    private Image getCardFaceImage(Card card) {
         if (card == null) {
-            return "";
+            return null;
         }
-        return ShopCatalog.resolveFaceText(card.getValue(), getSelectedFaceThemeId());
+
+        String themeId = getSelectedThemeId();
+
+        Image image = loadImage(
+                ShopCatalog.getFaceImagePath(
+                        themeId,
+                        card.getValue()
+                )
+        );
+
+        if (image != null) {
+            return image;
+        }
+
+        return createFaceValueImage(card.getValue());
+    }
+
+    private Image createFaceValueImage(String value) {
+        int width = 128;
+        int height = 128;
+
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(
+                width,
+                height,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB
+        );
+
+        Graphics2D g = img.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            g.setColor(new Color(0xEAF2FF));
+            g.fillRoundRect(0, 0, width, height, 18, 18);
+
+            g.setColor(new Color(0x1A1A2E));
+            g.setStroke(new BasicStroke(3f));
+            g.drawRoundRect(2, 2, width - 5, height - 5, 18, 18);
+
+            String text = value == null ? "" : value.trim();
+            if (text.isEmpty()) {
+                text = "C?";
+            }
+
+            int fontSize = text.length() <= 2 ? 42 : 34;
+            Font font = new Font("SansSerif", Font.BOLD, fontSize);
+            g.setFont(font);
+
+            FontMetrics fm = g.getFontMetrics();
+            int textWidth = fm.stringWidth(text);
+            int x = (width - textWidth) / 2;
+            int y = (height - fm.getHeight()) / 2 + fm.getAscent();
+
+            g.drawString(text, x, y);
+        } finally {
+            g.dispose();
+        }
+
+        return img;
+    }
+
+    private Image loadImage(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+
+        path = path.replace("\\", "/");
+
+        if (imageCache.containsKey(path)) {
+            return imageCache.get(path);
+        }
+
+        Image image = null;
+
+        String[] classpathCandidates = {
+                path,
+                path.startsWith("/memorygame/") ? path.substring("/memorygame".length()) : path,
+                path.startsWith("/") ? path.substring(1) : "/" + path
+        };
+
+        for (String candidate : classpathCandidates) {
+            URL url = getClass().getResource(candidate.startsWith("/") ? candidate : "/" + candidate);
+            if (url != null) {
+                image = new ImageIcon(url).getImage();
+                break;
+            }
+        }
+
+        if (image == null) {
+            image = loadImageFromFileSystem(path);
+        }
+
+        if (image == null) {
+            System.err.println("Không tìm thấy ảnh: " + path);
+        }
+
+        imageCache.put(path, image);
+        return image;
+    }
+
+    private Image loadImageFromFileSystem(String resourcePath) {
+        try {
+            String themePath = resourcePath
+                    .replaceFirst("^/memorygame/themes/", "")
+                    .replaceFirst("^memorygame/themes/", "")
+                    .replaceFirst("^/themes/", "")
+                    .replaceFirst("^themes/", "");
+
+            File imageFile = findThemeFile(themePath);
+
+            if (imageFile == null || !imageFile.exists()) {
+                return null;
+            }
+
+            return ImageIO.read(imageFile);
+        } catch (Exception e) {
+            System.err.println("Lỗi load ảnh từ file system: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private File findThemeFile(String themePath) {
+        String userDir = System.getProperty("user.dir");
+        String fixedPath = themePath.replace("/", File.separator);
+
+        File[] candidates = {
+                new File(userDir, "src/memorygame/themes/" + fixedPath),
+                new File(userDir, "memorygame/themes/" + fixedPath),
+                new File(userDir, "themes/" + fixedPath),
+                new File(userDir, "target/classes/themes/" + fixedPath),
+                new File(userDir, "target/classes/memorygame/themes/" + fixedPath),
+                new File(userDir, "../src/memorygame/themes/" + fixedPath),
+                new File(userDir, "../memorygame/themes/" + fixedPath)
+        };
+
+        for (File file : candidates) {
+            if (file.exists()) {
+                return file;
+            }
+        }
+
+        return null;
     }
 
     private class CardButton extends JButton {
+
         private static final int MATCH_FLASH_DURATION = 500;
+
         private final Card card;
         private boolean hintHighlighted = false;
         private boolean hovering = false;
@@ -202,6 +413,7 @@ public class GameBoardPanel extends JPanel {
 
         CardButton(Card card) {
             this.card = card;
+
             setFocusPainted(false);
             setBorderPainted(false);
             setContentAreaFilled(false);
@@ -231,29 +443,16 @@ public class GameBoardPanel extends JPanel {
         }
 
         void updateAppearance() {
-            CardState state = card.getState();
+            setText("");
 
-            if (state == CardState.MATCHED) {
-                setText("OK");
-                setFont(CARD_FONT);
-                setForeground(new Color(0xC8E6C9));
-                setEnabled(false);
-            } else if (state == CardState.FACE_UP) {
-                setText(getCardFaceText(card));
-                setFont(CARD_FONT_VALUE);
-                setForeground(getCardFaceTextColor());
-                setEnabled(true);
-            } else {
-                setText("?");
-                setFont(CARD_FONT);
-                setForeground(new Color(0x64B5F6));
-                setEnabled(true);
-            }
+            CardState state = card.getState();
+            setEnabled(state != CardState.MATCHED);
         }
 
         void showMatchEffect() {
             flashWhite = true;
             repaint();
+
             new Timer(MATCH_FLASH_DURATION, e -> {
                 flashWhite = false;
                 updateAppearance();
@@ -283,16 +482,23 @@ public class GameBoardPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            g2.setRenderingHint(
+                    RenderingHints.KEY_INTERPOLATION,
+                    RenderingHints.VALUE_INTERPOLATION_BICUBIC
+            );
+
+            g2.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON
+            );
 
             int w = getWidth();
             int h = getHeight();
             CardState state = card.getState();
 
             Color bgColor;
+
             if (flashWhite) {
                 bgColor = new Color(0xE8F5E9);
             } else if (state == CardState.MATCHED) {
@@ -300,8 +506,9 @@ public class GameBoardPanel extends JPanel {
             } else if (state == CardState.FACE_UP) {
                 bgColor = CARD_FACE_UP;
             } else {
-                bgColor = getCardBackColor(hovering && !boardLocked);
+                bgColor = hovering && !boardLocked ? CARD_BACK_HOVER : CARD_BACK;
             }
+
             g2.setColor(bgColor);
             g2.fillRoundRect(0, 0, w, h, CARD_ARC, CARD_ARC);
 
@@ -312,26 +519,48 @@ public class GameBoardPanel extends JPanel {
             } else {
                 g2.setColor(BORDER_COLOR);
             }
+
             g2.setStroke(new BasicStroke(2f));
             g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
 
-            if (state == CardState.FACE_DOWN && !flashWhite) {
-                g2.setColor(new Color(255, 255, 255, 12));
-                g2.fillRoundRect(2, 2, w - 4, h / 3, CARD_ARC, CARD_ARC);
+            Image image = null;
+
+            if (state == CardState.FACE_DOWN) {
+                image = getCardBackImage();
+            } else if (state == CardState.FACE_UP || state == CardState.MATCHED) {
+                image = getCardFaceImage(card);
             }
 
-            g2.setFont(getFont());
-            if (flashWhite) {
-                g2.setColor(CARD_MATCHED);
-            } else {
-                g2.setColor(getForeground());
-            }
-            FontMetrics fm = g2.getFontMetrics();
-            String text = getText();
-            if (text != null && !text.isEmpty()) {
-                int textX = (w - fm.stringWidth(text)) / 2;
-                int textY = (h - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(text, textX, textY);
+            if (image != null) {
+                int padding = 8;
+
+                int availableW = w - padding * 2;
+                int availableH = h - padding * 2;
+
+                int imgW = image.getWidth(this);
+                int imgH = image.getHeight(this);
+
+                if (imgW > 0 && imgH > 0) {
+                    double scale = Math.min(
+                            (double) availableW / imgW,
+                            (double) availableH / imgH
+                    );
+
+                    int drawW = (int) (imgW * scale);
+                    int drawH = (int) (imgH * scale);
+
+                    int x = (w - drawW) / 2;
+                    int y = (h - drawH) / 2;
+
+                    g2.drawImage(
+                            image,
+                            x,
+                            y,
+                            drawW,
+                            drawH,
+                            this
+                    );
+                }
             }
 
             if (hintHighlighted) {
@@ -342,6 +571,7 @@ public class GameBoardPanel extends JPanel {
                 g2.setStroke(new BasicStroke(3));
                 g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_ARC, CARD_ARC);
             }
+
             g2.dispose();
         }
     }

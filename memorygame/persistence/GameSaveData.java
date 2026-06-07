@@ -1,30 +1,25 @@
 package memorygame.persistence;
 
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class GameSaveData implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class GameSaveData {
 
-    private final int playerId;
-    private final int levelId;
-    private final int score;
-    private final int movesCount;
-    private final int remainingPairs;
-    private final boolean boardLocked;
-    private final Integer firstCardId;
-    private final Integer secondCardId;
-    private final List<CardSaveData> cards;
-    private final int hintCount;
-    private final int timeLeftSec;
-    private final long playerGold;
-    private final String selectedBackSkinId;
-    private final String selectedFaceThemeId;
-    private final Set<String> ownedBackSkinIds;
-    private final Set<String> ownedFaceThemeIds;
+    private int playerId;
+    private int levelId;
+    private int score;
+    private int movesCount;
+    private int remainingPairs;
+    private boolean boardLocked;
+    private Integer firstCardId;
+    private Integer secondCardId;
+    private List<CardSaveData> cards;
+    private int hintCount;
+    private int timeLeftSec;
+
+    private long playerGold;
+    private String selectedThemeId;
+    private Set<String> ownedThemeIds;
 
     public GameSaveData(
             int playerId,
@@ -39,10 +34,8 @@ public class GameSaveData implements Serializable {
             int hintCount,
             int timeLeftSec,
             long playerGold,
-            String selectedBackSkinId,
-            String selectedFaceThemeId,
-            Set<String> ownedBackSkinIds,
-            Set<String> ownedFaceThemeIds
+            String selectedThemeId,
+            Set<String> ownedThemeIds
     ) {
         this.playerId = playerId;
         this.levelId = levelId;
@@ -56,13 +49,10 @@ public class GameSaveData implements Serializable {
         this.hintCount = hintCount;
         this.timeLeftSec = timeLeftSec;
         this.playerGold = playerGold;
-        this.selectedBackSkinId = selectedBackSkinId;
-        this.selectedFaceThemeId = selectedFaceThemeId;
-        this.ownedBackSkinIds = new HashSet<>(ownedBackSkinIds);
-        this.ownedFaceThemeIds = new HashSet<>(ownedFaceThemeIds);
+        this.selectedThemeId = selectedThemeId;
+        this.ownedThemeIds = ownedThemeIds;
     }
 
-    // ===== GETTERS =====
     public int getPlayerId() {
         return playerId;
     }
@@ -111,25 +101,11 @@ public class GameSaveData implements Serializable {
         return playerGold;
     }
 
-    public String getSelectedBackSkinId() {
-        return selectedBackSkinId;
+    public String getSelectedThemeId() {
+        return selectedThemeId;
     }
 
-    public String getSelectedFaceThemeId() {
-        return selectedFaceThemeId;
-    }
-
-    public Set<String> getOwnedBackSkinIds() {
-        if (ownedBackSkinIds == null) {
-            return Collections.emptySet();
-        }
-        return Collections.unmodifiableSet(ownedBackSkinIds);
-    }
-
-    public Set<String> getOwnedFaceThemeIds() {
-        if (ownedFaceThemeIds == null) {
-            return Collections.emptySet();
-        }
-        return Collections.unmodifiableSet(ownedFaceThemeIds);
+    public Set<String> getOwnedThemeIds() {
+        return ownedThemeIds;
     }
 }

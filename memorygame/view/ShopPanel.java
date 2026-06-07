@@ -82,9 +82,7 @@ public class ShopPanel extends JPanel {
         content.setOpaque(false);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
-        content.add(buildSection("Skin mặt sau thẻ", ShopItem.ItemType.BACK_SKIN));
-        content.add(Box.createVerticalStrut(22));
-        content.add(buildSection("Chủ đề mặt thẻ", ShopItem.ItemType.FACE_THEME));
+        content.add(buildSection("Chủ đề thẻ", ShopItem.ItemType.THEME));
 
         JScrollPane scrollPane = new JScrollPane(content);
         scrollPane.setBorder(null);

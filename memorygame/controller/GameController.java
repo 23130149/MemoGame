@@ -138,8 +138,11 @@ public class GameController {
                 );
             } else {
                 boardPanel.showGameOver(gameState.getScore(), gameState.getMovesCount());
-                boardPanel.showNotify("Ban nhan duoc " + rewardGold + " vang (diem/10)."
-                        + (playerProfile != null ? " Tong vang: " + playerProfile.getGold() : ""));
+                String msg = "Bạn nhận được " + rewardGold + " vàng.";
+                if (playerProfile != null) {
+                    msg += " Tổng vàng: " + playerProfile.getGold();
+                }
+                boardPanel.showNotify(msg);
             }
         }
     }

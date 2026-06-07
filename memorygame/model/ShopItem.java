@@ -8,8 +8,7 @@ public class ShopItem implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum ItemType {
-        BACK_SKIN("Skin mặt sau thẻ"),
-        FACE_THEME("Chủ đề mặt thẻ");
+        THEME("Chủ đề thẻ");
 
         private final String displayName;
 
