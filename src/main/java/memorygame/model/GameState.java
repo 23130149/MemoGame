@@ -141,6 +141,10 @@ public class GameState {
         boardLocked = false;
     }
 
+    // ===== PHẦN PHÁT TRIỂN BỞI NGUYỄN VĂN THẮNG - UC07 =====
+    // Tối ưu bước hệ thống tìm cặp thẻ hợp lệ cho chức năng Yêu cầu gợi ý.
+    // Tương ứng Use Case/Sequence Diagram UC07: chỉ xét các thẻ chưa matched,
+    // đang ở trạng thái FACE_DOWN và tìm cặp cùng giá trị bằng HashMap để giảm độ phức tạp.
     // ===== HINT PAIR FINDING =====
     public Card[] findMatchPair() {
         if (cards == null || cards.size() < 2) {

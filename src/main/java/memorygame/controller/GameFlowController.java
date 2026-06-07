@@ -128,6 +128,11 @@ public final class GameFlowController {
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         bottomPanel.setBackground(new Color(0x1A1A2E));
 
+        // ===== PHẦN PHÁT TRIỂN BỞI NGUYỄN VĂN THẮNG - UC07/UC08 =====
+        // Đồng bộ nút Gợi ý với logic game.
+        // UC07: hiển thị số lượt còn lại, tắt nút khi hết lượt hoặc khi yêu cầu gợi ý bị xử lý.
+        // UC08: chống spam click trong lúc animation gợi ý đang chạy và chỉ bật lại nút khi animation kết thúc.
+        // Tương ứng Use Case/Sequence Diagram UC07/UC08, bước UI gửi yêu cầu gợi ý và nhận cập nhật từ Controller.
         // Nút Gợi ý
         int initialHints = engine.getGameState().getHintCount();
         JButton hintBtn = new JButton("💡 Gợi ý (" + initialHints + ")");
@@ -212,6 +217,9 @@ public final class GameFlowController {
                 }
         );
 
+        // ===== PHẦN PHÁT TRIỂN BỞI NGUYỄN VĂN THẮNG - UC07/UC08 =====
+        // Xử lý click nút Gợi ý: gọi GameController.onHintClick(), cập nhật số lượt còn lại
+        // và bật lại nút nếu yêu cầu bị từ chối nhưng người chơi vẫn còn lượt gợi ý.
         // Nút Gợi ý
         hintBtn.addActionListener(e -> {
             // UC-07/UC-08: chặn spam click trong khi hiệu ứng gợi ý đang chạy.

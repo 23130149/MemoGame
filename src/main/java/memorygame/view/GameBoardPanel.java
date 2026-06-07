@@ -158,6 +158,10 @@ public class GameBoardPanel extends JPanel {
         this.onCardClicked = callback;
     }
 
+    // ===== PHẦN PHÁT TRIỂN BỞI NGUYỄN VĂN THẮNG - UC07/UC08 =====
+    // Đồng bộ giao diện với logic gợi ý.
+    // UC07: cập nhật số lượt gợi ý còn lại sau khi Controller trừ lượt hợp lệ.
+    // UC08: thông báo cho GameFlowController khi animation gợi ý kết thúc để bật lại nút Gợi ý.
     public void updateHintDisplay(int remainingHints) {
         if (onHintCountChanged != null) {
             onHintCountChanged.accept(remainingHints);
