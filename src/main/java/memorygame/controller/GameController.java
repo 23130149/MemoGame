@@ -166,6 +166,13 @@ public class GameController {
         boardPanel.setBoardLocked(false);
     }
 
+    // ===== PHẦN PHÁT TRIỂN BỞI NGUYỄN VĂN THẮNG - UC07/UC08 =====
+    // UC07 - Yêu cầu gợi ý:
+    // Bước 1-5: kiểm tra điều kiện sử dụng gợi ý, khóa board, tìm cặp thẻ hợp lệ
+    // và chỉ trừ lượt gợi ý khi hệ thống tìm thấy cặp thẻ.
+    // UC08 - Hiển thị gợi ý tạm thời:
+    // Bước 6-10: lật tạm thời hai thẻ, hiển thị hiệu ứng gợi ý, dùng Timer để úp lại thẻ
+    // nếu chưa matched, mở khóa board và thông báo cho UI khi hiệu ứng kết thúc.
     /**
      * UC-07 / UC-08: Xử lý sự kiện khi người chơi nhấn nút "Gợi ý".
      * [Thắng - UC07/UC08]
@@ -257,6 +264,10 @@ public class GameController {
         return true;
     }
 
+    // ===== PHẦN PHÁT TRIỂN BỞI NGUYỄN VĂN THẮNG - UC07 =====
+    // Kiểm tra điều kiện trước khi cho phép người chơi dùng gợi ý.
+    // Tương ứng Use Case/Sequence Diagram UC07 - bước kiểm tra còn lượt gợi ý,
+    // board không bị khóa và không có thẻ đang lật dở trước khi tìm cặp thẻ.
     /**
      * UC-07 / UC-08 — Bước 2: Validate trạng thái game trước khi
      * thực hiện gợi ý.
