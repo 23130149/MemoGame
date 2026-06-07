@@ -1,22 +1,25 @@
 package memorygame.persistence;
 
-import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
-public class GameSaveData implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class GameSaveData {
 
-    private final int playerId;
-    private final int levelId;
-    private final int score;
-    private final int movesCount;
-    private final int remainingPairs;
-    private final boolean boardLocked;
-    private final Integer firstCardId;
-    private final Integer secondCardId;
-    private final List<CardSaveData> cards;
-    private final int hintCount;
-    private final int timeLeftSec;
+    private int playerId;
+    private int levelId;
+    private int score;
+    private int movesCount;
+    private int remainingPairs;
+    private boolean boardLocked;
+    private Integer firstCardId;
+    private Integer secondCardId;
+    private List<CardSaveData> cards;
+    private int hintCount;
+    private int timeLeftSec;
+
+    private long playerGold;
+    private String selectedThemeId;
+    private Set<String> ownedThemeIds;
 
     public GameSaveData(
             int playerId,
@@ -29,7 +32,10 @@ public class GameSaveData implements Serializable {
             Integer secondCardId,
             List<CardSaveData> cards,
             int hintCount,
-            int timeLeftSec
+            int timeLeftSec,
+            long playerGold,
+            String selectedThemeId,
+            Set<String> ownedThemeIds
     ) {
         this.playerId = playerId;
         this.levelId = levelId;
@@ -42,9 +48,11 @@ public class GameSaveData implements Serializable {
         this.cards = cards;
         this.hintCount = hintCount;
         this.timeLeftSec = timeLeftSec;
+        this.playerGold = playerGold;
+        this.selectedThemeId = selectedThemeId;
+        this.ownedThemeIds = ownedThemeIds;
     }
 
-    // ===== GETTERS =====
     public int getPlayerId() {
         return playerId;
     }
@@ -87,5 +95,17 @@ public class GameSaveData implements Serializable {
 
     public int getTimeLeftSec() {
         return timeLeftSec;
+    }
+
+    public long getPlayerGold() {
+        return playerGold;
+    }
+
+    public String getSelectedThemeId() {
+        return selectedThemeId;
+    }
+
+    public Set<String> getOwnedThemeIds() {
+        return ownedThemeIds;
     }
 }

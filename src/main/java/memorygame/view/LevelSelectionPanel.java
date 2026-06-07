@@ -7,6 +7,8 @@ import memorygame.model.GameSession;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -14,45 +16,61 @@ public class LevelSelectionPanel extends JPanel
         implements LevelSelectionController.LevelSelectionListener {
 
     private static final Color[] LEVEL_COLORS = {
-            new Color(0x4CAF50),   // Dễ    – xanh lá
-            new Color(0xFF9800),   // TB    – cam
-            new Color(0xF44336),   // Khó   – đỏ
+            new Color(0x4CAF50),
+            new Color(0xFF9800),
+            new Color(0xF44336),
     };
     private static final Color BG_COLOR = new Color(0x1A1A2E);
     private static final Color CARD_BG = new Color(0x16213E);
+    private static final Color CARD_HOVER = new Color(0x1F2D52);
     private static final Color CARD_SELECTED = new Color(0x0F3460);
     private static final Color TEXT_PRIMARY = Color.WHITE;
     private static final Color TEXT_SECONDARY = new Color(0xB0BEC5);
 
     private final LevelSelectionController controller;
-    private final Consumer<GameSession> onGameStart;  // callback khi bắt đầu trò chơi
+    private final Consumer<GameSession> onGameStart;
 
     private final JPanel levelCardsPanel = new JPanel(new GridLayout(1, 3, 20, 0));
-    private final JButton confirmBtn = new JButton("Xác nhận");
-    private final JButton cancelBtn = new JButton("Trở về");
-    private final JLabel errorLabel = new JLabel(" ");
+    private final JButton confirmBtn  = new JButton("Xác nhận");
+    private final JButton cancelBtn   = new JButton("Trở về");
+    private final JLabel  errorLabel  = new JLabel(" ");
+    private final JLabel  goldLabel   = new JLabel();
 
     private LevelCard[] levelCards;
     private DifficultyLevel selectedLevel = null;
-    private GameSession currentSession = null;
 
     public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart) {
-        this.onGameStart = onGameStart;
-        this.controller = new LevelSelectionController(playerId, this);
+        this(playerId, onGameStart, 0);
+    }
+
+    public LevelSelectionPanel(int playerId, Consumer<GameSession> onGameStart, long initialGold) {
+        this.onGameStart  = onGameStart;
+        this.controller   = new LevelSelectionController(playerId, this);
 
         setBackground(BG_COLOR);
         setLayout(new BorderLayout(0, 24));
         setBorder(new EmptyBorder(40, 60, 40, 60));
 
         buildUI();
+        setGoldAmount(initialGold);
         controller.loadLevelList();
     }
 
     private void buildUI() {
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+
         JLabel title = new JLabel("Chọn Cấp Độ", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 28));
         title.setForeground(TEXT_PRIMARY);
-        add(title, BorderLayout.NORTH);
+
+        goldLabel.setForeground(new Color(0xFFD54F));
+        goldLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        goldLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        topPanel.add(title, BorderLayout.CENTER);
+        topPanel.add(goldLabel, BorderLayout.EAST);
+        add(topPanel, BorderLayout.NORTH);
 
         levelCardsPanel.setBackground(BG_COLOR);
         add(levelCardsPanel, BorderLayout.CENTER);
@@ -71,11 +89,11 @@ public class LevelSelectionPanel extends JPanel
         btnRow.setBackground(BG_COLOR);
 
         styleButton(cancelBtn, new Color(0x607D8B), TEXT_PRIMARY);
-        cancelBtn.addActionListener(e -> controller.cancelSelection(currentSession));
+        cancelBtn.addActionListener(e -> controller.cancelSelection());
 
         styleButton(confirmBtn, new Color(0x2196F3), TEXT_PRIMARY);
         confirmBtn.setEnabled(false);
-        confirmBtn.addActionListener(e -> controller.confirmLevel(currentSession));
+        confirmBtn.addActionListener(e -> controller.confirmLevel());
 
         btnRow.add(cancelBtn);
         btnRow.add(confirmBtn);
@@ -89,6 +107,7 @@ public class LevelSelectionPanel extends JPanel
         SwingUtilities.invokeLater(() -> {
             levelCardsPanel.removeAll();
             levelCards = new LevelCard[levels.size()];
+
             for (int i = 0; i < levels.size(); i++) {
                 levelCards[i] = new LevelCard(levels.get(i), LEVEL_COLORS[i]);
                 final DifficultyLevel lvl = levels.get(i);
@@ -96,21 +115,19 @@ public class LevelSelectionPanel extends JPanel
                 levelCards[i].addActionListener(e -> onLevelCardClicked(lvl, idx));
                 levelCardsPanel.add(levelCards[i]);
             }
+
             levelCardsPanel.revalidate();
             levelCardsPanel.repaint();
         });
     }
 
     @Override
-    public void onLevelDetailShown(DifficultyLevel level) {
-        SwingUtilities.invokeLater(() -> showDetailPopup(level));
-    }
-
-    @Override
     public void onLevelConfirmed(GameSession session) {
         SwingUtilities.invokeLater(() -> {
             clearError();
-            if (onGameStart != null) onGameStart.accept(session);
+            if (onGameStart != null) {
+                onGameStart.accept(session);
+            }
         });
     }
 
@@ -118,7 +135,9 @@ public class LevelSelectionPanel extends JPanel
     public void onSelectionCancelled() {
         SwingUtilities.invokeLater(() -> {
             Window window = SwingUtilities.getWindowAncestor(this);
-            if (window != null) window.dispose();
+            if (window != null) {
+                window.dispose();
+            }
         });
     }
 
@@ -129,27 +148,19 @@ public class LevelSelectionPanel extends JPanel
 
     private void onLevelCardClicked(DifficultyLevel level, int idx) {
         clearError();
-        selectedLevel = level;
-        currentSession = controller.selectLevel(level);
 
+        // UC-02 - Le VietKhanh: khi bấm vào card cấp độ chỉ chọn và hiện viền.
+        // Tác dụng: bỏ popup chi tiết, giúp người chơi chọn nhanh rồi bấm Xác nhận để bắt đầu.
+        if (!controller.selectLevel(level)) {
+            confirmBtn.setEnabled(false);
+            return;
+        }
+
+        selectedLevel = level;
         for (int i = 0; i < levelCards.length; i++) {
             levelCards[i].setSelected(i == idx);
         }
         confirmBtn.setEnabled(true);
-    }
-
-    private void showDetailPopup(DifficultyLevel level) {
-        String msg = "<html><body style='width:220px; font-size:13px'>"
-                + "<b>" + level.getLevelName() + "</b><br><br>"
-                + level.getDescription() + "<br><br>"
-                + "<b>Lưới:</b> " + level.getGridRows() + "×" + level.getGridCols() + "<br>"
-                + "<b>Số cặp:</b> " + level.getTotalPairs() + "<br>"
-                + "<b>Thời gian:</b> " + level.getTimeLimitSec() + " giây<br>"
-                + "<b>Hệ số điểm:</b> ×" + level.getScoreMultiplier()
-                + "</body></html>";
-        JOptionPane.showMessageDialog(this, msg,
-                "Thông tin cấp độ – " + level.getLevelName(),
-                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void showError(String message) {
@@ -158,6 +169,29 @@ public class LevelSelectionPanel extends JPanel
 
     private void clearError() {
         errorLabel.setText(" ");
+    }
+
+    private void showDetailPopup(DifficultyLevel level) {
+        String msg = "<html><body style='width:240px; font-size:13px'>"
+                + "<b>" + level.getLevelName() + "</b><br><br>"
+                + level.getDescription() + "<br><br>"
+                + "<b>Lưới:</b> " + level.getGridRows() + "×" + level.getGridCols() + "<br>"
+                + "<b>Số cặp:</b> " + level.getTotalPairs() + "<br>"
+                + "<b>Thời gian:</b> " + level.getTimeLimitSec() + " giây<br>"
+                + "<b>Hệ số điểm:</b> ×" + level.getScoreMultiplier() + "<br>"
+                + "<b>Lượt gợi ý:</b> " + level.getHintCount()
+                + "</body></html>";
+
+        JOptionPane.showMessageDialog(
+                this,
+                msg,
+                "Thông tin cấp độ - " + level.getLevelName(),
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    public void setGoldAmount(long goldAmount) {
+        goldLabel.setText("Vàng: " + Math.max(0, goldAmount));
     }
 
     private void styleButton(JButton btn, Color bg, Color fg) {
@@ -171,9 +205,10 @@ public class LevelSelectionPanel extends JPanel
     }
 
     private class LevelCard extends JButton {
+        private boolean selected = false;
+        private boolean hovered = false;
         private final Color accentColor;
         private final DifficultyLevel level;
-        private boolean selected = false;
 
         LevelCard(DifficultyLevel level, Color accentColor) {
             this.level = level;
@@ -184,9 +219,7 @@ public class LevelSelectionPanel extends JPanel
             setBorderPainted(false);
             setFocusPainted(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(accentColor.darker(), 2, true),
-                    new EmptyBorder(20, 16, 20, 16)));
+            setBorder(createCardBorder(false));
 
             JLabel badge = new JLabel(level.getLevelName(), SwingConstants.CENTER);
             badge.setFont(new Font("SansSerif", Font.BOLD, 20));
@@ -200,29 +233,51 @@ public class LevelSelectionPanel extends JPanel
             addInfoRow(info, "Lưới", level.getGridRows() + "×" + level.getGridCols());
             addInfoRow(info, "Cặp thẻ", String.valueOf(level.getTotalPairs()));
             addInfoRow(info, "Thời gian", level.getTimeLimitSec() + "s");
-            addInfoRow(info, "Hệ số điểm", "×" + level.getScoreMultiplier());
+            addInfoRow(info, "Gợi ý", String.valueOf(level.getHintCount()));
             add(info, BorderLayout.CENTER);
 
-            JButton infoBtn = new JButton("ℹ Chi tiết");
-            infoBtn.setFont(new Font("SansSerif", Font.PLAIN, 11));
-            infoBtn.setForeground(accentColor);
-            infoBtn.setBackground(CARD_BG);
-            infoBtn.setBorderPainted(false);
-            infoBtn.setFocusPainted(false);
-            infoBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            infoBtn.addActionListener(e -> controller.showLevelDetail(level));
-            add(infoBtn, BorderLayout.SOUTH);
+            JButton detailBtn = new JButton("ℹ Xem chi tiết");
+            detailBtn.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            detailBtn.setForeground(accentColor);
+            detailBtn.setBackground(CARD_BG);
+            detailBtn.setBorderPainted(false);
+            detailBtn.setFocusPainted(false);
+            detailBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            detailBtn.addActionListener(e -> {
+                // UC-02 - Le VietKhanh: nút xem chi tiết cấp độ.
+                // Tác dụng: chỉ hiện popup thông tin khi người chơi bấm nút này,
+                // không tự bật popup khi click chọn card cấp độ.
+                showDetailPopup(level);
+            });
+            add(detailBtn, BorderLayout.SOUTH);
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hovered = true;
+                    updateCardStyle();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hovered = false;
+                    updateCardStyle();
+                }
+            });
         }
 
         private void addInfoRow(JPanel panel, String key, String value) {
             JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 2));
             row.setOpaque(false);
+
             JLabel k = new JLabel(key + ":");
             k.setFont(new Font("SansSerif", Font.PLAIN, 12));
             k.setForeground(TEXT_SECONDARY);
+
             JLabel v = new JLabel(value);
             v.setFont(new Font("SansSerif", Font.BOLD, 13));
             v.setForeground(TEXT_PRIMARY);
+
             row.add(k);
             row.add(v);
             panel.add(row);
@@ -230,21 +285,38 @@ public class LevelSelectionPanel extends JPanel
 
         public void setSelected(boolean selected) {
             this.selected = selected;
-            setBackground(selected ? CARD_SELECTED : CARD_BG);
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(
-                            selected ? accentColor : accentColor.darker(), selected ? 3 : 2, true),
-                    new EmptyBorder(20, 16, 20, 16)));
+            updateCardStyle();
+        }
+
+        private void updateCardStyle() {
+            if (selected) {
+                setBackground(CARD_SELECTED);
+            } else if (hovered) {
+                setBackground(CARD_HOVER);
+            } else {
+                setBackground(CARD_BG);
+            }
+
+            setBorder(createCardBorder(selected));
             repaint();
+        }
+
+        private javax.swing.border.Border createCardBorder(boolean selected) {
+            int thickness = selected ? 4 : 2;
+            Color borderColor = selected ? accentColor : accentColor.darker();
+            return BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(borderColor, thickness, true),
+                    new EmptyBorder(20, 16, 20, 16)
+            );
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+
             if (selected) {
                 Graphics2D g2 = (Graphics2D) g;
-                g2.setColor(new Color(accentColor.getRed(),
-                        accentColor.getGreen(), accentColor.getBlue(), 30));
+                g2.setColor(new Color(accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue(), 30));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
             }
         }
